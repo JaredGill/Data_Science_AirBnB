@@ -99,6 +99,8 @@ def set_default_feature_values(df, cols_for_default_value: list, number: int = 1
 
 def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"]):
     df = clean_tabular_data()
+    # re index the dataframe as rows were removed
+    df = df.reset_index(drop=True)
     #load df, remove string columns, remove 1 input column and make that into a seperate df called labels
     #show(df)
     labels = pd.DataFrame()

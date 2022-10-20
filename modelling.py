@@ -2,6 +2,7 @@ from pyexpat import model
 from pandasgui import show
 from sklearn.linear_model import SGDRegressor
 from sklearn.datasets import make_regression
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
@@ -10,14 +11,17 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import ParameterGrid
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import scale
+from sklearn.tree import DecisionTreeRegressor
 from tabular_data import clean_tabular_data
 from tabular_data import load_airbnb
 import inspect
+import joblib
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-def data_sets():
+def load_and_split_data():
     #df = ()
     airbnb = load_airbnb()
     #feature
@@ -97,12 +101,12 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
                                                         hyperparameters_dict: dict):
     # iterate through every possible variation and get rmse from all, the best model & hyperparameters will be from rmse 
     sgdr = model()
-    perf_metrics = {"validation_RMSE": [], "r2_score": []}
+    perf_metrics = {"hyperparameters": [], "validation_RMSE": [], "r2_score": []}
     grid = list(ParameterGrid(hyperparameters_dict))
     models = []
-    for i in grid:
-        mydict = i
-        models.append(i)
+    for params in grid:
+        mydict = params
+        models.append(params)
 
         #check each key is present in parameters for method SGDRegressor
         filtered_mydict = {k: v for k, v in mydict.items() if k in [p.name for p in inspect.signature(SGDRegressor).parameters.values()]}
@@ -113,6 +117,7 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
         score = sgdr.score(train_features, train_labels)
         ypred = sgdr.predict(val_features)
         rmse = mean_squared_error(val_labels, ypred, squared=False)
+        perf_metrics['hyperparameters'].append(params)
         perf_metrics['validation_RMSE'].append(rmse)
         perf_metrics['r2_score'].append(score)
 
@@ -140,42 +145,75 @@ def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters
     best_score = result.best_score_
     print('Best Score: %s' % result.best_score_)
     print('Best Hyperparameters: %s' % result.best_params_)
-    return best_hyperparameters, best_score
+    cv_results = search.cv_results_
+    perf_metrics = {'hyperparameters': [], 'neg_root_mean_squared_error_score': []}
+    perf_metrics['hyperparameters'].extend(cv_results.get('params'))
+    perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
 
-def save_model(foldername: str = "//models//regression//linear_regression"):
+    best_model = model(**best_hyperparameters)
+    return best_model, best_hyperparameters, perf_metrics, best_score
+
+
+def save_model(filename: str, hyperparameters, model, metrics, foldername: str = "models/regression/linear_regression"):
     curr_dir = os.getcwd()
     target_path = os.path.join(curr_dir, foldername)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
+    model_filename = os.path.join(target_path, f'{filename}_model.joblib')
+    hyperparameters_filename = os.path.join(target_path, f'{filename}_hyperparameters.json')
+    metrics_filename = os.path.join(target_path, f'{filename}_metrics.json')
+    print(model_filename)
+    joblib.dump(model, model_filename)
+    with open(hyperparameters_filename, 'w') as f:
+        json.dump(hyperparameters, f)
+    with open(metrics_filename, 'w') as f:
+        json.dump(metrics, f)
     
 
 
-def model_data():
+def model_data(model, param_grid, model_name):
     #more descriptive names 
-    data = data_sets()
+    data = load_and_split_data()
     #ensure it only works when data has the same length as parameters
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
-    # xtrain = data[0]
-    # xtest = data[1]
-    # xvalidation = data[2]
-    # ytrain = data[3]
-    # ytest = [4]
-    # yvalidation = data[5]
     simple_model(xtrain, xvalidation, ytrain, yvalidation)
     #model = (xtrain, xvalidation, ytrain, yvalidation)
-    param_grid = {"learning_rate": ["constant", "adaptive", "optimal"], 
+    
+    custom = custom_tune_regression_model_hyperparameters(model, xtrain, ytrain, xvalidation, yvalidation, xtest, ytest, param_grid)
+    gridsearch = tune_regression_model_hyperparameters(model, xtrain, ytrain, param_grid)
+    #custom_best_model, custom_best_hyperparameters, custom_perf_metrics, custom_best_rmse = custom
+    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_rmse = gridsearch
+    #print(type(custom_best_hyperparameters))
+    #print(type(gridsearch_best_hyperparameters))
+
+    # print("best custom hyperparameters:", custom_best_hyperparameters)
+    # print("best custom rmse:", custom_best_rmse)
+    #save_model("custom_tuned_SGDRegressor", custom_best_hyperparameters, custom_best_model, custom_perf_metrics)
+    save_model(f"sklearn_tuned_{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics)
+
+def evaluate_all_models():
+    regressors = [
+        SGDRegressor,
+        GradientBoostingRegressor(),
+        # RandomForestRegressor(),
+        # DecisionTreeRegressor(),
+    ]
+    hyperparameters = [ {"learning_rate": ["constant", "adaptive", "optimal"], 
                 "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], 
                 "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],
                 "penalty": ["l2", "l1", "elasticnet"],
                 #"loss": ["squared_error"]
-                }
-    custom = custom_tune_regression_model_hyperparameters(SGDRegressor, xtrain, ytrain, xvalidation, yvalidation, xtest, ytest, param_grid)
-    prebuilt = tune_regression_model_hyperparameters(SGDRegressor, xtrain, ytrain, param_grid)
-    #print(custom[0])
-    # 
-    print("best custom hyperparameters:", custom[1])
-    print("best custom rmse:", custom[3])
-    #print(prebuilt)
-    save_model()
+                }, 
+                {'learning_rate': [0.001,0.005,0.01,0.05,0.1,0.5],
+                  'subsample': [0.9, 0.5, 0.2, 0.1],
+                  'n_estimators': [100,500,1000, 1500],
+                  'max_depth': [4,6,8,10]
+                }, 
+                ]
+    
+    model_data(SGDRegressor, hyperparameters)
+
 if __name__ == "__main__":
-    model_data()
+    evaluate_all_models()
+
+# %%
