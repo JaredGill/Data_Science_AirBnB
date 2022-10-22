@@ -46,7 +46,7 @@ def load_and_split_data():
 #tune with validation for hyperparameters
 #test set is at end of training data
 
-def simple_model(xtrain, xvalidation, ytrain, yvalidation):
+def simple_model(model, xtrain, xvalidation, ytrain, yvalidation):
     #instantiate linear model
     #sgdr = SGDRegressor(alpha=0.0001, epsilon=0.01, eta0=0.1,penalty='elasticnet')
     sgdr = SGDRegressor(alpha=0.0001, epsilon=0.01, eta0=0.1,penalty='elasticnet')
@@ -131,7 +131,7 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
     #print(models)
     print(models[best_rmse_pos])
     best_hyperparameters = models[best_rmse_pos]
-
+    print(best_hyperparameters)
     best_model = SGDRegressor(**filtered_mydict)
     return best_model, best_hyperparameters, perf_metrics, best_rmse
 
@@ -146,9 +146,12 @@ def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters
     print('Best Score: %s' % result.best_score_)
     print('Best Hyperparameters: %s' % result.best_params_)
     cv_results = search.cv_results_
-    perf_metrics = {'hyperparameters': [], 'neg_root_mean_squared_error_score': []}
-    perf_metrics['hyperparameters'].extend(cv_results.get('params'))
-    perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
+    perf_metrics = {
+        #'hyperparameters': [], 
+        'neg_root_mean_squared_error_score': []}
+    perf_metrics['neg_root_mean_squared_error_score'].append(result.best_score_)
+    # perf_metrics['hyperparameters'].extend(cv_results.get('params'))
+    # perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
 
     best_model = model(**best_hyperparameters)
     return best_model, best_hyperparameters, perf_metrics, best_score
@@ -171,47 +174,57 @@ def save_model(filename: str, hyperparameters, model, metrics, foldername: str =
     
 
 
-def model_data(model, param_grid, model_name):
+def model_data(model, param_grid, model_name, folder_name, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     #more descriptive names 
+    # data = load_and_split_data()
+    # #ensure it only works when data has the same length as parameters
+    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    #model = (xtrain, xvalidation, ytrain, yvalidation)
+    
+    gridsearch = tune_regression_model_hyperparameters(model, xtrain, ytrain, param_grid)
+    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_rmse = gridsearch
+    
+    #simple_model(gridsearch_best_model, xtest, xvalidation, ytest, yvalidation)
+
+    save_model(f"{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics, folder_name)
+    return gridsearch_best_rmse
+
+def evaluate_all_models():
     data = load_and_split_data()
     #ensure it only works when data has the same length as parameters
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
-    simple_model(xtrain, xvalidation, ytrain, yvalidation)
-    #model = (xtrain, xvalidation, ytrain, yvalidation)
+    hyperparameters_sgdr =  {"learning_rate": ["constant", "adaptive", "optimal"], 
+                            "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], 
+                            "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],
+                            "penalty": ["l2", "l1", "elasticnet"],
+                            #"loss": ["squared_error"]
+                            } 
+                                    # GradientBoostingRegressor
+    hyperparameters_gbr = {'learning_rate': [0.001,0.005,0.01,0.05, 0.1],
+                            'subsample': [0.9, 0.5, 0.2, 0.1],
+                            'n_estimators': [100, 250, 500],
+                            'max_depth': [1,2,4,6]
+                            }
+                                    # # RandomForestRegressor
+    hyperparameters_rfr = {'criterion': ['squared_error'],
+                            'min_samples_split' : [2,4,8],
+                            'n_estimators': [100,500,1000, 1500],
+                            'max_depth': [4,6,8,10]
+                            },
+                                    # # DecisionTreeRegressor
+    hyperparameters_dfr =  {'criterion': ['squared_error'],
+                            'min_samples_split' : [2,4,8],
+                            "max_features": ["log2","sqrt"],
+                            'max_depth': [2,4,6,8,10], 
+                            "min_weight_fraction_leaf":[0.1,0.2,0.3,0.4,0.5]
+                            }
     
-    custom = custom_tune_regression_model_hyperparameters(model, xtrain, ytrain, xvalidation, yvalidation, xtest, ytest, param_grid)
-    gridsearch = tune_regression_model_hyperparameters(model, xtrain, ytrain, param_grid)
-    #custom_best_model, custom_best_hyperparameters, custom_perf_metrics, custom_best_rmse = custom
-    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_rmse = gridsearch
-    #print(type(custom_best_hyperparameters))
-    #print(type(gridsearch_best_hyperparameters))
+    model_data(SGDRegressor, hyperparameters_sgdr, 'SGDRegressor', "models/regression/linear_regression", xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+    model_data(GradientBoostingRegressor, hyperparameters_gbr, 'GradientBoostingRegressor', "models/regression/gradient_boosted_regression", xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+    model_data(RandomForestRegressor, hyperparameters_rfr, 'RandomForestRegressor', "models/regression/random_forest_regression", xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+    model_data(DecisionTreeRegressor, hyperparameters_dfr, 'DecisionTreeRegressor', "models/regression/decision_tree_regression", xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
 
-    # print("best custom hyperparameters:", custom_best_hyperparameters)
-    # print("best custom rmse:", custom_best_rmse)
-    #save_model("custom_tuned_SGDRegressor", custom_best_hyperparameters, custom_best_model, custom_perf_metrics)
-    save_model(f"sklearn_tuned_{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics)
-
-def evaluate_all_models():
-    regressors = [
-        SGDRegressor,
-        GradientBoostingRegressor(),
-        # RandomForestRegressor(),
-        # DecisionTreeRegressor(),
-    ]
-    hyperparameters = [ {"learning_rate": ["constant", "adaptive", "optimal"], 
-                "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], 
-                "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],
-                "penalty": ["l2", "l1", "elasticnet"],
-                #"loss": ["squared_error"]
-                }, 
-                {'learning_rate': [0.001,0.005,0.01,0.05,0.1,0.5],
-                  'subsample': [0.9, 0.5, 0.2, 0.1],
-                  'n_estimators': [100,500,1000, 1500],
-                  'max_depth': [4,6,8,10]
-                }, 
-                ]
-    
-    model_data(SGDRegressor, hyperparameters)
+#def find_best_model():
 
 if __name__ == "__main__":
     evaluate_all_models()
