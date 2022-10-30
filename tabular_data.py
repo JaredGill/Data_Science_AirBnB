@@ -115,9 +115,9 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
         text_data.insert(col_loc, col, move_cols)
         col_loc += 1
     features = df
-    # show(features)
-    # show(text_data)
-    # show(labels)
+    show(features)
+    show(text_data)
+    show(labels)
     my_tuple = (features, labels)
     return my_tuple
         
@@ -135,5 +135,6 @@ def clean_tabular_data():
 if __name__ == "__main__":
     #p = TabData()
     #df = p.load_raw_data()
-    clean_tabular_data()
+    # clean_tabular_data()
     #.reset_index(df)
+    load_airbnb()
