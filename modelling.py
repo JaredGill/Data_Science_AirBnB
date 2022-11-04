@@ -162,7 +162,32 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
     return best_model, best_hyperparameters, perf_metrics, best_rmse
 
 def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters_dict: dict):
-    #
+    '''
+    Function loads in model training data and hyperparameters.
+    Then uses Gridsearchcv and fits the training data to return the best performing model and score
+
+    Parameters:
+    -----------
+    model: regression model
+        Input regression model with hyperparameters
+    xtrain: numpy.ndarray
+        Feature subset for training model
+    ytrain: numpy.ndarray
+        Label subset for training model
+    hyperparameters_dict: dict
+        Dict of hyperparameters for model      
+    
+    Returns:
+    --------
+    best_model: model
+        The model with best hyperparameters passed into it
+    best_hyperparameters: dict
+        The best hyperparameters based on the score
+    perf_metrics: dict
+        The best score
+    best_score: int
+        The best score (regression: r-squared, classification: accuracy)
+    '''
     regression_model = model()
 
     search = GridSearchCV(regression_model, param_grid=hyperparameters_dict, cv=5)
@@ -183,6 +208,22 @@ def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters
     return best_model, best_hyperparameters, perf_metrics, best_score
 
 def save_model(model_name: str, hyperparameters, model, metrics, foldername: str = "models/regression/linear_regression"):
+    '''
+    Function saves the model in a .json and .joblib, and the metrics in a .json.
+
+    Parameters:
+    -----------
+    model_name: str
+        Name of the model
+    hyperparameters: dict
+        hyperparameters for model
+    model: regression model
+        Input regression model with hyperparameters
+    metrics: dict
+        Feature subset for training model
+    foldername: str
+        Name of folder files are to be saved into    
+    '''
     curr_dir = os.getcwd()
     target_path = os.path.join(curr_dir, foldername)
     if not os.path.exists(target_path):
@@ -199,18 +240,42 @@ def save_model(model_name: str, hyperparameters, model, metrics, foldername: str
     
 def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     '''
-    Finds the best hyperparameters for model then saves it
+    Calls the tune_regression_model_hyperparameters and save_model depending on the type of model passed as a string.
+
+    Parameters:
+    ----------
+    model_type: str
+        Name of the type of model either regression or classification
+    model: sklearn model
+        Input regression model with hyperparameters
+    param_grid: dict
+        Dict of list of hyperparameters for model
+    model_name: str
+        Name of the chosen sklearn model 
+    folder_name: str
+        Name of the folder to save model and metrics to
+    
+    Returns:
+    --------
+    gridsearch_best_score: int
+        T  he best score of all gridsearch combinations(rsquared for regression, accuracy for classification)
+    gridsearch_best_model: sklearn model
+        The model with hyperparameters
+    gridsearch_best_hyperparameters: dict
+        The best hyperparameters based on score
+    gridsearch_perf_metrics: dict
+        The metrics for the best scoring combination
     '''
     if model_type == 'regression':
         gridsearch = tune_regression_model_hyperparameters(model, xtrain, ytrain, param_grid)
     elif model_type == 'classification':
         gridsearch = tune_classification_model_hyperparameters(model, xtrain, ytrain, param_grid)
-    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_rmse = gridsearch
+    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_score = gridsearch
     
     #simple_model(gridsearch_best_model, xtest, xvalidation, ytest, yvalidation)
 
     save_model(f"{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics, folder_name)
-    return gridsearch_best_rmse, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    return gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
 
 def evaluate_all_regression_models():
     data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
@@ -285,20 +350,32 @@ def simple_classification():
     model1 = Pipeline(steps=[('standardize', scaler),
                         ('log_reg', lr)])
     model1.fit(xtrain, ytrain)
-    ypred = model1.predict(xtest)
+    ypred = model1.predict(xvalidation)
     precision = model1.score(xtrain, ytrain)
     print("The precision of the model:", precision)
-    test_precision = model1.score(xtest, ytest)
+    test_precision = model1.score(xvalidation, yvalidation)
     print("The precision of the test data model:", test_precision)
-    cf = confusion_matrix(ytest, ypred)
+    cf = confusion_matrix(yvalidation, ypred)
     cf_normalised = cf / cf.sum()
     visualise_confusion_matrix(cf_normalised)
 
 def classification_eval_metrics(ytest, ypred, average_option: str = 'weighted'):
-    prec_score = precision_score(ytest, ypred, average='average_option')
-    rec_score = recall_score(ytest, ypred, average='average_option')
-    f1score = f1_score(ytest, ypred, average='average_option')
-    fbetascore = fbeta_score(ytest, ypred, beta=2, average='average_option')
+    '''
+    Function calculates the performance of classification model.
+
+    Parameters:
+    ----------
+    ytest: numpy.ndarray
+        Label subset for test data
+    ypred: numpy.ndarray
+        Label prediction data
+    average_option: str
+        Option for scoring performance (weight, micro, or macro)
+    '''
+    prec_score = precision_score(ytest, ypred, average=average_option)
+    rec_score = recall_score(ytest, ypred, average=average_option)
+    f1score = f1_score(ytest, ypred, average=average_option)
+    fbetascore = fbeta_score(ytest, ypred, beta=2, average=average_option)
     print('Precision score: ', prec_score)
     print('Recall score: ', rec_score)
     print('F1 score', f1score)
@@ -332,11 +409,11 @@ def evaluate_all_classification_models():
     data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
     #ensure it only works when data has the same length as parameters
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
-    hyperparameters_log_reg =  [{"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
+    hyperparameters_log_reg =  {"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
                                 "C": [1, 5, 10],   
                                 "penalty": ["l2", "l1", "elasticnet"],
                                 "max_iter": [10000, 500000, 10000000, 1500000]
-                                }]
+                                }
                                     # GradientBoostingRegressor
     hyperparameters_gbc = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1],
                             'subsample': [0.9, 0.5, 0.2, 0.1],
@@ -367,8 +444,8 @@ def evaluate_all_classification_models():
 
 
 if __name__ == "__main__":
-    # sgdr, gbr, rfr, dfr = evaluate_all_regression_models()
-    # find_best_model(sgdr, gbr, rfr, dfr)
-    log_reg, gbc, rfc, dfc = evaluate_all_classification_models()
-    find_best_model(log_reg, gbc, rfc, dfc)
+    sgdr, gbr, rfr, dfr = evaluate_all_regression_models()
+    find_best_model(sgdr, gbr, rfr, dfr)
+    # log_reg, gbc, rfc, dfc = evaluate_all_classification_models()
+    # find_best_model(log_reg, gbc, rfc, dfc)
 

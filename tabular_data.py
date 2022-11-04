@@ -98,6 +98,25 @@ def set_default_feature_values(df, cols_for_default_value: list, number: int = 1
     return df
 
 def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"]):
+    '''
+    Function calls clean_tabular_data() then resets the index of df.
+    It then makes two new dfs: one for labels and one for the cols to be removed from original df.
+    These are taken in as parameters label, and str_cols.
+    By default it removes the str cols but can be adapted otherwise..
+    It returns only the feature and label dfs as a tuple.
+
+    Parameters:
+    ----------
+    label: str
+        Name of the label column
+    str_cols: list of str
+        Names of the columns to remove from the dataframe
+    
+    Returns:
+    --------
+    modified_dfs: tuple
+        Tuple of (features, labels)
+     '''
     df = clean_tabular_data()
     # re index the dataframe as rows were removed
     df = df.reset_index(drop=True)
@@ -115,13 +134,16 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
         text_data.insert(col_loc, col, move_cols)
         col_loc += 1
     features = df
-    show(features)
-    show(text_data)
-    show(labels)
-    my_tuple = (features, labels)
-    return my_tuple
+    # show(features)
+    # show(text_data)
+    # show(labels)
+    modified_dfs = (features, labels)
+    return modified_dfs
         
 def clean_tabular_data():
+    '''
+    
+    '''
     raw_df = load_raw_data("C:\\Users\\jared\\AiCore\\DS_Airbnb\\AirbnbDataSci\\structured\\AirBnbData.csv")
     #df = t.load_raw_data()
     remove_rows_df = remove_rows_with_missing_ratings(raw_df, 'Value_rate')
