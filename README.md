@@ -32,7 +32,22 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 ### Stochastic Gradient Descent
 - Usually a Gradient Descent optimisation technique (seen in image below) would be very computationally expensive with a large dataset, but Stochastic Gradient Descent selects a random data sample to calculate the derivitives instead of the whole dataset.
 - ![image](https://user-images.githubusercontent.com/108297203/200419171-2dd31e1a-1b87-44fa-a1e2-b716df9cff64.png)
-- o
+- By selecting a random point in the data to then travel down the slope to find the minimum for the label.
+- The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
+
+### Gradient Boosting
+- This ML model is sequential - it works to improve the previous models.
+- It works by building trees with the features to predict the label.
+![image](https://user-images.githubusercontent.com/108297203/200449229-b4b34bd2-5b2a-4f56-be7e-d0908572257a.png)
+    -  Initially it takes the average of the predicted label and calculates Pseudo Residual by: (Observed label - Predicted Label)
+    -  These Pseudo Residual are mapped and averaged to the leafs in the first tree where its feature values follow along.
+    -  Pseudo Residual are then added to the training label
+    -  To prevent overfitting/high variance a learning rate is used to scale the trees contribution (e.g. learning rate = 0.1)
+        - This limits the prediction after making one tree, but several more are made and added to the calculation.
+        - Multiple small steps equates to a better prediction with lower Variance
+    - Trees are added based on the errors from previous trees, i.e. the second tree will have Pseudo Residual based on the first tree scaled by learning rate.
+    - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified
+###
 ### Regularization
 - This parameter is present in SGDRegressor and Logstic Regression.
 - It reduces the overfitting/generalsation error (difference between training and validation sets) by discouraging a learning a more complex/flexible model.
