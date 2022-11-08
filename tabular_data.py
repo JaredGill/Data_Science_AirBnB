@@ -92,7 +92,6 @@ def set_default_feature_values(df, cols_for_default_value: list, number: int = 1
     df: dataframe
         Dataframe of edited data
     '''
-    #df[column] = df[column].fillna(number)
     for column in cols_for_default_value:
         df[column] = df[column].fillna(number)
     return df
@@ -155,8 +154,4 @@ def clean_tabular_data():
     return edit_str_df
 
 if __name__ == "__main__":
-    #p = TabData()
-    #df = p.load_raw_data()
-    # clean_tabular_data()
-    #.reset_index(df)
     load_airbnb()

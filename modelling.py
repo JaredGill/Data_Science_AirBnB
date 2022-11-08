@@ -43,7 +43,7 @@ def load_and_split_data(label: str, str_cols: list):
     x = airbnb[0]
     y = airbnb[1]
     x = scale(x)
-
+    np.random.seed(42)
     xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.3)
     xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_size=0.5)
     return xtrain, xtest, xvalidation, ytrain, ytest, yvalidation
@@ -278,6 +278,21 @@ def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, 
     return gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
 
 def evaluate_all_regression_models():
+    '''
+    Function loads the data with load_and_split_data() and has custom dicts of hyperparameters based on the model type.
+    Then it calls tune_and_save_model() on each model and returns its outputs.
+
+    Returns:
+    --------
+    sgdr: tune_and_save_model() return values
+        The SGDRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    gbr: tune_and_save_model() return values
+        The GradientBoostingRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    rfr:tune_and_save_model() return values
+        The RandomForestRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    dfr: tune_and_save_model() return values
+        The DecisionTreeRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    '''
     data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
     #ensure it only works when data has the same length as parameters
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
@@ -342,6 +357,10 @@ def find_best_model(sgd, gb, rf, df):
     print(best_model, best_hyperparameters, best_metrics)
     return best_model, best_hyperparameters, best_metrics
 
+
+
+
+
 def simple_classification():
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
     scaler = StandardScaler()
@@ -387,6 +406,32 @@ def visualise_confusion_matrix(confusion_matrix):
     plt.show()
 
 def tune_classification_model_hyperparameters(model, xtrain, ytrain, hyperparameters_dict: dict):
+    '''
+    Function loads in model training data and hyperparameters.
+    Then uses Gridsearchcv and fits the training data to return the best performing model and score
+
+    Parameters:
+    -----------
+    model: classification model
+        Input regression model with hyperparameters
+    xtrain: numpy.ndarray
+        Feature subset for training model
+    ytrain: numpy.ndarray
+        Label subset for training model
+    hyperparameters_dict: dict
+        Dict of hyperparameters for model      
+    
+    Returns:
+    --------
+    best_model: model
+        The model with best hyperparameters passed into it
+    best_hyperparameters: dict
+        The best hyperparameters based on the score
+    perf_metrics: dict
+        The best score
+    best_score: int
+        The best score (regression: r-squared, classification: accuracy)
+    '''
     classification_model = model()
 
     search = GridSearchCV(classification_model, param_grid=hyperparameters_dict, cv=5)
@@ -406,6 +451,21 @@ def tune_classification_model_hyperparameters(model, xtrain, ytrain, hyperparame
     return best_model, best_hyperparameters, perf_metrics, best_score
 
 def evaluate_all_classification_models():
+    '''
+    Function loads the data with load_and_split_data() and has custom dicts of hyperparameters based on the model type.
+    Then it calls tune_and_save_model() on each model and returns its outputs.
+
+    Returns:
+    --------
+    log_reg: tune_and_save_model() return values
+        The LogisticRegression gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    gbc: tune_and_save_model() return values
+        The GradientBoostingClassifier gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    rfc:tune_and_save_model() return values
+        The RandomForestClassifier gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    dfc: tune_and_save_model() return values
+        The DecisionTreeClassifier gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    '''
     data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
     #ensure it only works when data has the same length as parameters
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
