@@ -12,12 +12,15 @@ from sklearn.preprocessing import scale
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from tabular_data import load_airbnb
+import datetime
 import inspect
 import joblib
 import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import torch
+
 
 def load_and_split_data(label: str, str_cols: list):
     '''
@@ -209,7 +212,10 @@ def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters
 
 def save_model(model_name: str, hyperparameters, model, metrics, foldername: str = "models/regression/linear_regression"):
     '''
-    Function saves the model in a .json and .joblib, and the metrics in a .json.
+    Function checks whether model is from pytorch or not.
+    If it is a pytorch model the foldername is set to 'models/regression/neural_networks/'and saved using torch.save()
+    If not the foldername is as unaltered and the function saves the model in a .joblib
+    The hyperparameters and the metrics are saved in a .json
 
     Parameters:
     -----------
@@ -225,14 +231,31 @@ def save_model(model_name: str, hyperparameters, model, metrics, foldername: str
         Name of folder files are to be saved into    
     '''
     curr_dir = os.getcwd()
-    target_path = os.path.join(curr_dir, foldername)
-    if not os.path.exists(target_path):
-        os.makedirs(target_path)
-    model_filename = os.path.join(target_path, f'{model_name}_model.joblib')
+    pytorch_check = bool
+    try: 
+        model.state_dict()
+        pytorch_check = True
+    except: 
+        pytorch_check = False
+
+    if pytorch_check == True:
+        curr_datetime = datetime.datetime.now()
+        datetime_str = curr_datetime.strftime("%Y") + '-' + curr_datetime.strftime("%m") + '-' + curr_datetime.strftime("%d") + '_' + curr_datetime.strftime("%X")
+        foldername = 'models/regression/neural_networks/' + datetime_str
+        target_path = os.path.join(curr_dir, foldername)
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        save_path = os.path.join(target_path, 'model.pt')
+        torch.save(model.state_dict(), save_path)
+    elif pytorch_check == False:
+        target_path = os.path.join(curr_dir, foldername)
+        if not os.path.exists(target_path):
+            os.makedirs(target_path)
+        model_filename = os.path.join(target_path, f'{model_name}_model.joblib')
+        joblib.dump(model, model_filename)
+
     hyperparameters_filename = os.path.join(target_path, f'{model_name}_hyperparameters.json')
     metrics_filename = os.path.join(target_path, f'{model_name}_metrics.json')
-    print(model_filename)
-    joblib.dump(model, model_filename)
     with open(hyperparameters_filename, 'w') as f:
         json.dump(hyperparameters, f)
     with open(metrics_filename, 'w') as f:

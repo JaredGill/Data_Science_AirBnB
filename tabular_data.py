@@ -117,15 +117,12 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
         Tuple of (features, labels)
      '''
     df = clean_tabular_data()
-    # re index the dataframe as rows were removed
     df = df.reset_index(drop=True)
     #load df, remove string columns, remove 1 input column and make that into a seperate df called labels
-    #show(df)
     labels = pd.DataFrame()
     label_to_predict = df.pop(label)
     labels.insert(0, label, label_to_predict)
 
-    # Move text data to a seperate df
     text_data = pd.DataFrame()
     col_loc = 0
     for col in str_cols:
