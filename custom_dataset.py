@@ -6,9 +6,11 @@ import torch
 import yaml
 import torch.nn as nn
 import torch.nn.functional as F
+from collections import OrderedDict
+from math import isqrt
 from modelling import save_model
 from pandasgui import show
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, ParameterGrid
 from sklearn.metrics import r2_score
 from torch import save, load
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -22,6 +24,8 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         self.tab_data = load_airbnb()
         self.cleaned_features = self.tab_data[0]
         self.cleaned_label = self.tab_data[1]
+        # show(self.cleaned_features)
+        # show(self.cleaned_label)
         #self.csv = pd.read_csv(csv_file)
         #transformations in init not get_item
 
@@ -55,28 +59,34 @@ class LinearRegression(torch.nn.Module):#
     # The __init__() is used to define any network layers that the model will use.
     def __init__(self, 
                 hidden_layer: int,
-                linear_depth: int = 1
+                linear_depth: int = 1,
+                #config
                 ):
         super().__init__()
-        #list comprehension for 
-        #lin_layers = [nn.linear(hidden_layer, hidden_layer) for idx in range(linear_depth)]
-        linear_layers = []
+        
+        linear_layers_list = []
         self.linear_depth = linear_depth
         self.hidden_layer = hidden_layer
         for idx in range(self.linear_depth):
-            linear_layers.append(nn.Linear(self.hidden_layer, self.hidden_layer))
-            linear_layers.append(nn.ReLU())
+            linear_layers_list.append(nn.Linear(self.hidden_layer, self.hidden_layer))
+            linear_layers_list.append(nn.ReLU())
+
+
 
         self.layers = nn.Sequential(
+            #config
             nn.Linear(11, self.hidden_layer),
-            #*linear_layers, ##(for list comprehension)
-            # Use the rectified-linear activation function over features.
-            # It compute the weighted sum of inputs and biases, which is in turn used to decide whether a neuron can be activated or not. 
-            # It manipulates the presented data and produces an output for the neural network that contains the parameters in the data. 
-            # helps to convert linear function to non-linear and converts complex data into simple functions so that it can be solved easily
             nn.ReLU(),
-            linear_layers,
-            nn.Linear(self.hidden_layer, 1)
+            # nn.Linear(self.hidden_layer, self.hidden_layer),
+            # # Use the rectified-linear activation function over features.
+            # # It compute the weighted sum of inputs and biases, which is in turn used to decide whether a neuron can be activated or not. 
+            # # It manipulates the presented data and produces an output for the neural network that contains the parameters in the data. 
+            # # helps to convert linear function to non-linear and converts complex data into simple functions so that it can be solved easily
+            # nn.ReLU(),
+            nn.Linear(self.hidden_layer, 10),
+            #linear_layers_list[0],
+            nn.ReLU(),
+            nn.Linear(10, 1)
         )
     # The forward() function is where the model is set up by stacking all the layers together.
     def forward(self, features):
@@ -103,7 +113,8 @@ def train(model,
     batch_idx = 0
     train_start_time = time.time()
 
-    metrics = {'RMSE_loss': [], 'R_squared': [], 'training_duration': [], 'inference_latency': []}
+    metrics = {'RMSE_loss_train': 0, 'RMSE_loss_val': 0,'RMSE_loss_test': 0,'R_squared_train': 0, 'R_squared_val': 0,'R_squared_test': 0,
+                'training_duration': 0, 'inference_latency': 0}
     train_r2_batch = []
     train_rmse_batch = []
     inf_latency_batch = []
@@ -152,20 +163,24 @@ def train(model,
         val_rmse_list.append(val_rmse)
         writer.add_scalar('loss/Val', val_loss, batch_idx)
 
-    metrics['inference_latency'].append(np.average(inf_latency_batch))
+    metrics['inference_latency'] = np.average(inf_latency_batch)
 
     train_end_time = time.time()
-    metrics['training_duration'].append(train_end_time - train_start_time)
-    metrics['R_squared'].append(np.average(train_r2_batch))
-    metrics['RMSE_loss'].append(np.average(train_rmse_batch))
-    metrics['R_squared'].append(np.average(val_r2_list))
-    metrics['RMSE_loss'].append(np.average(val_rmse_list))
+    metrics['training_duration'] = train_end_time - train_start_time
+    # numpy.float32 wont convert to json so make them normal floats instead
+    metrics['R_squared_train'] = float(np.average(train_r2_batch))
+    metrics['RMSE_loss_train'] = float(np.average(train_rmse_batch))
+    metrics['R_squared_val'] = float(np.average(val_r2_list))
+    metrics['RMSE_loss_val'] = float(np.average(val_rmse_list))
     test_loss, test_r2, test_rmse = eval(model, test_loader)
-    metrics['R_squared'].append(np.average(test_r2))
-    metrics['RMSE_loss'].append(np.average(test_rmse))    
+    metrics['R_squared_test'] = float(np.average(test_r2))
+    metrics['RMSE_loss_test'] = float(np.average(test_rmse))    
     print(metrics)
     model.test_loss = test_loss
     return model, metrics
+
+    #'RMSE_loss_train': [], 'RMSE_loss_val': [],'RMSE_loss_test': [],
+               # 'R_squared_train': [], 'R_squared_val': [],'R_squared_test': [],
 
 # tqdm use for pytorch to visualize something
 # use sklearns rsqaured
@@ -246,27 +261,95 @@ def get_nn_config():
         return databaseConfig
 
 def generate_nn_configs():
+    config_dict = {'optimiser': ['torch.optim.SGD'],
+                'learning_rate': [0.01, 0.001, 0.0001, 0.00001],
+                'hidden_layer_width': [121, 225],
+                'depth': [0, 1],
+                'loss_func': ['mse_loss']}
+    grid = list(ParameterGrid(config_dict))
+    configs = []
+    for params in grid:
+        configs.append(params)
+    print(configs)
+    return configs
+
+def find_best_nn(train_loader, val_loader, test_loader):
+    configs_list = generate_nn_configs()
+    metrics_list = []
+    trained_model_list = []
+    rmse_metric = []
+    hyperparameters = []
+    for config in configs_list:
+        hyperparameters.append(config)
+        optimiser_name = config['optimiser']
+        learning_rate = config['learning_rate']
+        loss_func = config['loss_func']
+        hidden_layer = config['hidden_layer_width']
+        linear_depth = config['depth']
+        model = LinearRegression(hidden_layer, linear_depth)
+       
+        try:
+            trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
+            trained_model_list.append(trained_model)
+            metrics_list.append(metrics)
+            rmse_metric.append(metrics['RMSE_loss_test'])
+        except:
+            print('Error in neural network.')
+    best_rmse = min(rmse_metric)
+    print(rmse_metric)
+    print(metrics_list)
+    print(hyperparameters)
+    idx = rmse_metric.index(best_rmse)
+    best_model = trained_model_list[idx]
+    best_metrics = metrics_list[idx]
+    best_hyperparameters = hyperparameters[idx]
+    print(best_model, best_metrics, best_hyperparameters)
+
+    return best_model, best_metrics, best_hyperparameters
+
+    # best_rmse = min(perf_metrics["validation_RMSE"])
+    # print("best rmse", best_rmse)
+    # for item, value in perf_metrics.items():
+    #     if best_rmse in value:
+    #         best_rmse_pos = value.index(best_rmse)
+    #         print(value.index(best_rmse))
+    # #print(models)
+    # print(models[best_rmse_pos])
+    # best_hyperparameters = models[best_rmse_pos]
+    # print(best_hyperparameters)
+    # best_model = SGDRegressor(**filtered_params)
+    # return best_model, best_hyperparameters, perf_metrics, best_rmse
     
-    pass
-
-config_details = get_nn_config()
-optimiser_name = config_details['optimiser']
-print(optimiser_name)
-learning_rate = config_details['learning_rate']
-print(learning_rate)
-loss_func = config_details['loss_func']
-print(loss_func)
-hidden_layer = config_details['hidden_layer_width']
-print(hidden_layer)
-linear_depth = config_details['depth']
-
-model = LinearRegression(hidden_layer, linear_depth)
-train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
-
-#save_model('linear_regression', hyperparameters, model, metrics, "models/regression/neural_networks/")
+##############################
+# config_details = get_nn_config()
+# optimiser_name = config_details['optimiser']
+# learning_rate = config_details['learning_rate']
+# loss_func = config_details['loss_func']
+# hidden_layer = config_details['hidden_layer_width']
+# linear_depth = config_details['depth']
 
 
-#if __name__ == "__main__":
+# config = OrderedDict()
+# config['input'] = nn.Linear(11, hidden_layer)
+# for idx in range(linear_depth):
+#     rel_idx = f'relu{idx}'
+#     config[rel_idx] = nn.ReLU()
+#     idx += 1
+#     od_idx = f'layer{idx}'
+#     config[od_idx] = nn.Linear(hidden_layer, hidden_layer)
+#     idx +=1
+# config[f'layer{linear_depth}'] = nn.Linear(hidden_layer, 10)
+# linear_depth +=1 
+# config[f'relu{linear_depth}'] = nn.ReLU()
+# config['output'] = nn.Linear(10, 1)
 
-# To save the model to disk to use later, just use the torch.save() function and voila!
-### torch.save(model.state_dict(), 'model.ckpt'#)
+# #model = LinearRegression(config)
+# model = LinearRegression(121, 1)
+# trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
+##############
+# hyperparameters = get_nn_config()
+
+# save_model('test', hyperparameters, trained_model, metrics, "models/regression/neural_networks/")
+
+find_best_nn(train_loader, val_loader, test_loader)
+

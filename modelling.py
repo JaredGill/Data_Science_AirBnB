@@ -138,7 +138,7 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
         models.append(params)
 
         #check each key is present in parameters for method SGDRegressor
-        filtered_params = {k: v for k, v in mydict.items() if k in [p.name for p in inspect.signature(SGDRegressor).parameters.values()]}
+        filtered_params = {key: value for key, value in mydict.items() if key in [parameter.name for parameter in inspect.signature(SGDRegressor).parameters.values()]}
         
         #pass in dict as parameters
         sgdr = SGDRegressor(**filtered_params)
@@ -240,26 +240,35 @@ def save_model(model_name: str, hyperparameters, model, metrics, foldername: str
 
     if pytorch_check == True:
         curr_datetime = datetime.datetime.now()
-        datetime_str = curr_datetime.strftime("%Y") + '-' + curr_datetime.strftime("%m") + '-' + curr_datetime.strftime("%d") + '_' + curr_datetime.strftime("%X")
+        # For files ':' is not an acceptable character
+        datetime_str = curr_datetime.strftime('%Y') + '-' + curr_datetime.strftime('%m') + '-' + curr_datetime.strftime('%d') + '_' + curr_datetime.strftime('%H') + ';' + curr_datetime.strftime('%M') + ';' + curr_datetime.strftime('%S')
         foldername = 'models/regression/neural_networks/' + datetime_str
         target_path = os.path.join(curr_dir, foldername)
         if not os.path.exists(target_path):
             os.makedirs(target_path)
-        save_path = os.path.join(target_path, 'model.pt')
+        model_name = 'model.pt'
+        save_path = os.path.join(target_path, model_name)
         torch.save(model.state_dict(), save_path)
+        hyperparameters_filename = os.path.join(target_path, 'hyperparameters.json')
+        metrics_filename = os.path.join(target_path, 'metrics.json')
+        with open(hyperparameters_filename, 'w') as f:
+            json.dump(hyperparameters, f)
+        with open(metrics_filename, 'w') as f:
+            # numpy.float32 wont convert to json so make them str instead
+            json.dump(metrics, f)
+
     elif pytorch_check == False:
         target_path = os.path.join(curr_dir, foldername)
         if not os.path.exists(target_path):
             os.makedirs(target_path)
         model_filename = os.path.join(target_path, f'{model_name}_model.joblib')
         joblib.dump(model, model_filename)
-
-    hyperparameters_filename = os.path.join(target_path, f'{model_name}_hyperparameters.json')
-    metrics_filename = os.path.join(target_path, f'{model_name}_metrics.json')
-    with open(hyperparameters_filename, 'w') as f:
-        json.dump(hyperparameters, f)
-    with open(metrics_filename, 'w') as f:
-        json.dump(metrics, f)
+        hyperparameters_filename = os.path.join(target_path, f'{model_name}_hyperparameters.json')
+        metrics_filename = os.path.join(target_path, f'{model_name}_metrics.json')
+        with open(hyperparameters_filename, 'w') as f:
+            json.dump(hyperparameters, f)
+        with open(metrics_filename, 'w') as f:
+            json.dump(metrics, f)
     
 def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     '''
