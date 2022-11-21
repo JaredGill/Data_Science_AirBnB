@@ -19,9 +19,12 @@ from tabular_data import load_airbnb
 
 
 class AirbnbNightlyPriceImageDataset(Dataset):
+    '''
+    Class inherits a parent class All datasets that represent a map from keys to data samples should subclass it.
+    '''
     def __init__(self):
         super().__init__()
-        self.tab_data = load_airbnb()
+        self.tab_data = load_airbnb('bedrooms')
         self.cleaned_features = self.tab_data[0]
         self.cleaned_label = self.tab_data[1]
         # show(self.cleaned_features)
@@ -30,16 +33,34 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         #transformations in init not get_item
 
     def __getitem__(self, idx):
+        '''
+        Returns an item of the dataset at the index provided. 
+
+        Parameters:
+        -----------
+        idx: int
+            The desired Index of the dataset
+        
+        Returns:
+        --------
+        features: torch.tensor
+            The features of the dataset
+        label: torch.tensor
+            The labels of the dataset    
+        '''
         features = torch.tensor(self.cleaned_features.iloc[idx]).float()
         label = torch.tensor(self.cleaned_label.iloc[idx]).float()
-        # print(features.dtype)
-        # print('--------------')
-        # print(label.dtype)
-        #label = self.cleaned_label.iloc[idx]
-
         return (features, label)
     
     def __len__(self):
+        '''
+        Returns the length of the dataset.
+
+        Returns:
+        --------
+        len(self.cleaned_features): int
+            The number of rows in dataset
+        '''
         return len(self.cleaned_features)
 
 dataset = AirbnbNightlyPriceImageDataset()
@@ -58,38 +79,28 @@ class LinearRegression(torch.nn.Module):#
     
     # The __init__() is used to define any network layers that the model will use.
     def __init__(self, 
-                hidden_layer: int,
-                linear_depth: int = 1,
-                #config
+                config
                 ):
         super().__init__()
-        
-        linear_layers_list = []
-        self.linear_depth = linear_depth
-        self.hidden_layer = hidden_layer
-        for idx in range(self.linear_depth):
-            linear_layers_list.append(nn.Linear(self.hidden_layer, self.hidden_layer))
-            linear_layers_list.append(nn.ReLU())
-
-
-
         self.layers = nn.Sequential(
-            #config
-            nn.Linear(11, self.hidden_layer),
-            nn.ReLU(),
-            # nn.Linear(self.hidden_layer, self.hidden_layer),
-            # # Use the rectified-linear activation function over features.
-            # # It compute the weighted sum of inputs and biases, which is in turn used to decide whether a neuron can be activated or not. 
-            # # It manipulates the presented data and produces an output for the neural network that contains the parameters in the data. 
-            # # helps to convert linear function to non-linear and converts complex data into simple functions so that it can be solved easily
-            # nn.ReLU(),
-            nn.Linear(self.hidden_layer, 10),
-            #linear_layers_list[0],
-            nn.ReLU(),
-            nn.Linear(10, 1)
+            config
         )
     # The forward() function is where the model is set up by stacking all the layers together.
     def forward(self, features):
+        '''
+        Builds the model by stacking all the layers together.
+
+        Parameters: 
+        -----------
+        features: torch.tensor
+            Features of the dataset
+        
+        Returns:
+        --------
+        self.layers(features):
+            The built model
+
+        '''
         return self.layers(features)
 
 def train(model, 
@@ -101,6 +112,34 @@ def train(model,
         learning_rate,
         loss_name
         ):
+    '''
+    Trains the neural network model with dataloaders and hyperparameters given.
+    The model is trained in batches of training dataloader and then looped over by a number of epochs.
+    The validation set is evaluated after every epoch using eval(), and the test set is evaluated once at the end.
+    For every batch of the training set, the loss is calcualted and written to the SummaryWriter() to be viewed on TensorBoard.
+    Similarly the validation set loss is also but on a seperate graph in Tensorboard after every epoch.
+    To save the metrics each is datasets rmse and r2 are appended to a metrics dict. 
+    Some have to be in a list from whih the average is calclated then passed to dict
+
+    Parameters:
+    -----------
+    model: Class
+        torch.nn class for building the model
+    train_loader: DataLoader
+        Train dataset
+    val_loader: DataLoader
+        Validation dataset
+    test_loader: DataLoader
+        Testing dataset
+    num_epochs: int
+        Number of loops to go through the train and val datasets
+    optimiser_name: str
+        The name of the optimiser function
+    learning_rate: float
+        The learning rate of model
+    loss_name: str
+        The name of the loss function
+    '''
 
     if optimiser_name == "torch.optim.SGD":
         optimiser= torch.optim.SGD(model.parameters(), learning_rate)
@@ -120,6 +159,7 @@ def train(model,
     inf_latency_batch = []
     val_r2_list = []
     val_rmse_list = []
+    
     for epoch in range(num_epochs):
         inf_latency_start_time = time.time()
         for batch in train_loader:
@@ -175,48 +215,38 @@ def train(model,
     test_loss, test_r2, test_rmse = eval(model, test_loader)
     metrics['R_squared_test'] = float(np.average(test_r2))
     metrics['RMSE_loss_test'] = float(np.average(test_rmse))    
-    print(metrics)
+    #print(metrics)
     model.test_loss = test_loss
     return model, metrics
 
-    #'RMSE_loss_train': [], 'RMSE_loss_val': [],'RMSE_loss_test': [],
-               # 'R_squared_train': [], 'R_squared_val': [],'R_squared_test': [],
-
 # tqdm use for pytorch to visualize something
-# use sklearns rsqaured
-# length of time model takes for pred
-# custom for inf_lat 
-# Time.now() at start of batch then at end, take diff thats for one batch is infrence 
-# time for training is all batchs
 
-def eval(model, validation_set):
+def eval(model, dataset):
     #convert into numpy array
     losses=[]
     r2_list = []
     rmse_list = []
-    for batch in validation_set:
+    for batch in dataset:
 
         features, labels = batch
-        #np_labels = labels.detach().numpy()
-        #calls model on features
+
         prediction = model(features)
-        #np_prediction = prediction.detach().numpy()
         loss = F.mse_loss(prediction, labels)
         losses.append(loss.detach())
 
         r2 = r2_score(labels.detach().numpy(), prediction.detach().numpy())
         r2_list.append(r2)
-        rmse = loss**(1/2.0) #- mse to the power of 0.5
+        rmse = loss**(1/2.0)
         rmse_list.append(rmse.detach())
     avg_loss = np.average(losses)
     avg_r2 = np.average(r2_list)
     avg_rmse = np.average(rmse_list)
-    # print(avg_loss)
-    # print(avg_r2)
-    # print(avg_rmse)
     return avg_loss, avg_r2, avg_rmse
 
 class LogisticRegression(torch.nn.Module):
+    '''
+    Finish later
+    '''
     def __init__(self):
         super().__init__()
         self.linear_layer = torch.nn.Linear(3, 1)
@@ -225,6 +255,9 @@ class LogisticRegression(torch.nn.Module):
         return F.sigmoid(self.linear_layer(features))
 
 class ImageClassifier(nn.Module):
+    '''
+    Unused rn
+    '''
     def __init__(self):
         # conv2d or convolutional neural network that performs convolution on the image is able to 
         # outperform a regular neural network in which you would feed the image by flattening it
@@ -252,6 +285,14 @@ class ImageClassifier(nn.Module):
         return self.model(features)
 
 def get_nn_config():
+    '''
+    Reads in configuration .yaml file as a dict to be used for neural network
+
+    Returns:
+    -------
+    databaseConfig: dict
+        Configuration details
+    '''
     with open('nn_config.yaml') as file:
         try:
             databaseConfig = yaml.safe_load(file)   
@@ -261,19 +302,52 @@ def get_nn_config():
         return databaseConfig
 
 def generate_nn_configs():
+    '''
+    Generates all possible combinations of hyperparameters from a dict.
+
+    Returns:
+    --------
+    configs: list
+        List of all combinations
+    '''
+
     config_dict = {'optimiser': ['torch.optim.SGD'],
                 'learning_rate': [0.01, 0.001, 0.0001, 0.00001],
-                'hidden_layer_width': [121, 225],
-                'depth': [0, 1],
+                'hidden_layer_width': [16, 32],
+                'depth': [1, 2],
                 'loss_func': ['mse_loss']}
     grid = list(ParameterGrid(config_dict))
     configs = []
     for params in grid:
         configs.append(params)
-    print(configs)
+    #print(configs)
     return configs
 
 def find_best_nn(train_loader, val_loader, test_loader):
+    '''
+    Calls on generate_nn_configs() to retrieve all possible hyperparameter combinations.
+    For every combination of hyperparameters it creates an ordered dict to pass into model class and trains it.
+    Model, metrics, hyperparams and 'RMSE_loss_test' metric are appended to individual lists.
+    The index of the best 'RMSE_loss_test', is used to get the rest of details for the best model
+
+    Parameters:
+    -----------
+    train_loader: DataLoader
+        Train dataset
+    val_loader: DataLoader
+        Validation dataset
+    test_loader: DataLoader
+        Testing dataset
+    
+    Returns:
+    --------
+    best_model: torch.nn.class
+        The best performing trained model
+    best_metrics:
+        The metrics of the best performing model
+    best_hyperparameters:
+        The hyperparameters of the best performing model
+    '''
     configs_list = generate_nn_configs()
     metrics_list = []
     trained_model_list = []
@@ -281,12 +355,31 @@ def find_best_nn(train_loader, val_loader, test_loader):
     hyperparameters = []
     for config in configs_list:
         hyperparameters.append(config)
+
+        #Parse the details from dict key
         optimiser_name = config['optimiser']
         learning_rate = config['learning_rate']
         loss_func = config['loss_func']
         hidden_layer = config['hidden_layer_width']
         linear_depth = config['depth']
-        model = LinearRegression(hidden_layer, linear_depth)
+
+        #create ordered dict
+        config_dict = OrderedDict()
+        config_dict['input'] = nn.Linear(11, hidden_layer)
+        for idx in range(linear_depth):
+            rel_idx = f'relu{idx}'
+            config_dict[rel_idx] = nn.ReLU()
+            idx += 1
+            od_idx = f'layer{idx}'
+            config_dict[od_idx] = nn.Linear(hidden_layer, hidden_layer)
+            idx +=1
+        config_dict[f'layer{linear_depth}'] = nn.Linear(hidden_layer, 10)
+        linear_depth +=1 
+        config_dict[f'relu{linear_depth}'] = nn.ReLU()
+        config_dict['output'] = nn.Linear(10, 1)
+        #neurons for class last layer == to input classes
+        #softmax for ouptput
+        model = LinearRegression(config_dict)
        
         try:
             trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
@@ -295,61 +388,23 @@ def find_best_nn(train_loader, val_loader, test_loader):
             rmse_metric.append(metrics['RMSE_loss_test'])
         except:
             print('Error in neural network.')
+            # trained_model_list.append('Error in neural network.')
+            # metrics_list.append('Error in neural network.')
+            # rmse_metric.append('Error in neural network.')
     best_rmse = min(rmse_metric)
-    print(rmse_metric)
-    print(metrics_list)
-    print(hyperparameters)
+    print('rmse_metrics: ', rmse_metric)
+    print('metrics_list: ', metrics_list)
+    print('hyperparameters: ', hyperparameters)
     idx = rmse_metric.index(best_rmse)
     best_model = trained_model_list[idx]
     best_metrics = metrics_list[idx]
     best_hyperparameters = hyperparameters[idx]
+    print('########################################')
     print(best_model, best_metrics, best_hyperparameters)
 
     return best_model, best_metrics, best_hyperparameters
 
-    # best_rmse = min(perf_metrics["validation_RMSE"])
-    # print("best rmse", best_rmse)
-    # for item, value in perf_metrics.items():
-    #     if best_rmse in value:
-    #         best_rmse_pos = value.index(best_rmse)
-    #         print(value.index(best_rmse))
-    # #print(models)
-    # print(models[best_rmse_pos])
-    # best_hyperparameters = models[best_rmse_pos]
-    # print(best_hyperparameters)
-    # best_model = SGDRegressor(**filtered_params)
-    # return best_model, best_hyperparameters, perf_metrics, best_rmse
-    
-##############################
-# config_details = get_nn_config()
-# optimiser_name = config_details['optimiser']
-# learning_rate = config_details['learning_rate']
-# loss_func = config_details['loss_func']
-# hidden_layer = config_details['hidden_layer_width']
-# linear_depth = config_details['depth']
 
+best_model, best_metrics, best_hyperparameters = find_best_nn(train_loader, val_loader, test_loader)
 
-# config = OrderedDict()
-# config['input'] = nn.Linear(11, hidden_layer)
-# for idx in range(linear_depth):
-#     rel_idx = f'relu{idx}'
-#     config[rel_idx] = nn.ReLU()
-#     idx += 1
-#     od_idx = f'layer{idx}'
-#     config[od_idx] = nn.Linear(hidden_layer, hidden_layer)
-#     idx +=1
-# config[f'layer{linear_depth}'] = nn.Linear(hidden_layer, 10)
-# linear_depth +=1 
-# config[f'relu{linear_depth}'] = nn.ReLU()
-# config['output'] = nn.Linear(10, 1)
-
-# #model = LinearRegression(config)
-# model = LinearRegression(121, 1)
-# trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
-##############
-# hyperparameters = get_nn_config()
-
-# save_model('test', hyperparameters, trained_model, metrics, "models/regression/neural_networks/")
-
-find_best_nn(train_loader, val_loader, test_loader)
-
+save_model('test', best_hyperparameters, best_model, best_metrics, "models/regression/neural_networks/")

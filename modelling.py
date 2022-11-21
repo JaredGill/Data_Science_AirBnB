@@ -241,6 +241,7 @@ def save_model(model_name: str, hyperparameters, model, metrics, foldername: str
     if pytorch_check == True:
         curr_datetime = datetime.datetime.now()
         # For files ':' is not an acceptable character
+        #save as timestamp for folder
         datetime_str = curr_datetime.strftime('%Y') + '-' + curr_datetime.strftime('%m') + '-' + curr_datetime.strftime('%d') + '_' + curr_datetime.strftime('%H') + ';' + curr_datetime.strftime('%M') + ';' + curr_datetime.strftime('%S')
         foldername = 'models/regression/neural_networks/' + datetime_str
         target_path = os.path.join(curr_dir, foldername)
