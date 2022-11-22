@@ -93,6 +93,7 @@ for config in configs_list:
 
         #create ordered dict
         config_dict = OrderedDict()
+        # first layer input is 11 to match the number of features
         config_dict['input'] = nn.Linear(11, hidden_layer)
         for idx in range(linear_depth):
             rel_idx = f'relu{idx}'
@@ -127,11 +128,10 @@ The training of each configuration of neural networks can be observed here:
 {"RMSE_loss_train": 0.8288193345069885, "RMSE_loss_val": 0.8430336117744446, "RMSE_loss_test": 0.6353606581687927, "R_squared_train": 0.2855689986481355, "R_squared_val": 0.26073228757584077, "R_squared_test": 0.3644241055577916, "training_duration": 53.118608713150024, "inference_latency": 0.14666998505592346}
 ```
 - The metrics show that the train and validation sets RMSE and R-squared values are very similar which indicates the model has not been overfit.
-- The test sets root mean squared error was used determine the optimal configuration. This can be seen as the orange line in the graphs above.
+- The test sets root mean squared error was used determine the optimal configuration. This can be seen as the orange line in the second graph above.
 - In this run the best hyperparameters found were: 
-```python
-{"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
-```
+        - {"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+
 
 
 
