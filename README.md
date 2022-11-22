@@ -122,7 +122,11 @@ The training of each configuration of neural networks can be observed here:
 
 ![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
 - These images show the drastic difference in loss between the diverse configs. The bottom image is a close up view of the best performing as opposed to the two runs which had a terrible performance in comparison.
-     
+- In this run the best hyperparameters found were: 
+```python
+{"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+```
+
 
 
 
