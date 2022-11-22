@@ -22,11 +22,16 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 -   The test set(15%) is used to show how the model will perform on unseen data
 
 ## Regression 
-- Regression models were chosen, trained on the same dataset and evaluated with gridsearchcv with custom hyperparameters to determine the optimal model. 
+- Regression is a commonly used supervised machine learning model that aims to grasp the link between independant variables (features, x-axis) and a dependant variable (label, y-axis) which gives a continous output(e.g. price).
+- By predicting the continous outputs regression can be used to forecast on unseen data, usually via a line of best fit through data points.
+- Regression models chosen were StochasticGradientDescentRegressor, GradientBoostingRegressor, DecisionTreeRegressor, and RandomForestRegressor all found from sklearn.ensemble and sklearn.tree. These were trained on the same dataset and evaluated with gridsearchcv with custom hyperparameters to determine the optimal model. 
 ### Evaluation
 - Loss functions provide a measurement on the models performance.
 - The root mean squared error was the loss function chosen to determine the best model. More can be found about it here: https://www.brainstobytes.com/mean-absolute-error-vs-root-mean-square-error/
 - Several other metrics such as Rsquared and mean absolute error can also be tracked. (https://www.mygreatlearning.com/blog/r-square/#:~:text=R-square%20is%20a%20goodness-of-fit%20measure%20for%20linear%20regression,variable%20on%20a%20convenient%200%20%E2%80%93%20100%25%20scale.)
+
+## Classification
+- Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete output variables(e.g. categories)
 
 ## Models
 ### Stochastic Gradient Descent
