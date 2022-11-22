@@ -60,4 +60,69 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 - These are computing systems which are comprised of many layers of interconnected units. 
 ![image](https://user-images.githubusercontent.com/108297203/200390046-30515704-46c2-41e2-a751-d84341f99ae1.png)
 - Neural networks can have many layers, the increase in layers allows the network to perfrom more complex calculations.
-- Each node in the network 
+- Each neuron in the network 
+- The
+- To discover the best configuration for the neural network a list of possible combinations in generate_nn_configs(). 
+```python
+config_dict = {'optimiser': ['torch.optim.SGD'],
+                'learning_rate': [0.01, 0.001, 0.0001, 0.00001],
+                'hidden_layer_width': [16, 32],
+                'depth': [1, 2],
+                'loss_func': ['mse_loss']}
+    grid = list(ParameterGrid(config_dict))
+    configs = []
+    for params in grid:
+        configs.append(params)
+```
+- These were then iterated through, each one made a ordered dict to pass into the neural network class, which was then trained and its metrics were found.
+```python 
+configs_list = generate_nn_configs()
+metrics_list = []
+trained_model_list = []
+rmse_metric = []
+hyperparameters = []
+for config in configs_list:
+        hyperparameters.append(config)
+
+        #Parse the details from dict key
+        optimiser_name = config['optimiser']
+        learning_rate = config['learning_rate']
+        loss_func = config['loss_func']
+        hidden_layer = config['hidden_layer_width']
+        linear_depth = config['depth']
+
+        #create ordered dict
+        config_dict = OrderedDict()
+        config_dict['input'] = nn.Linear(11, hidden_layer)
+        for idx in range(linear_depth):
+            rel_idx = f'relu{idx}'
+            config_dict[rel_idx] = nn.ReLU()
+            idx += 1
+            od_idx = f'layer{idx}'
+            config_dict[od_idx] = nn.Linear(hidden_layer, hidden_layer)
+            idx +=1
+        config_dict[f'layer{linear_depth}'] = nn.Linear(hidden_layer, 10)
+        linear_depth +=1 
+        config_dict[f'relu{linear_depth}'] = nn.ReLU()
+        config_dict['output'] = nn.Linear(10, 1)
+        #neurons for class last layer == to input classes
+        #softmax for ouptput
+        model = LinearRegression(config_dict)
+        
+        try:
+            trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
+            trained_model_list.append(trained_model)
+            metrics_list.append(metrics)
+            rmse_metric.append(metrics['RMSE_loss_test'])
+        except:
+            print('Error in neural network.')
+```
+The training of each configuration of neural networks can be observed here:
+![image](https://user-images.githubusercontent.com/108297203/203389157-246f61a5-f7b3-4921-bf0b-d50ea070905f.png)
+
+![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
+- These images show the drastic difference in loss between the diverse configs. The bottom image is a close up view of the best performing as opposed to the two runs which had a terrible performance in comparison.
+     
+
+
+
