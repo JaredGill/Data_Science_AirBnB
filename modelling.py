@@ -1,7 +1,7 @@
 from pandasgui import show
 from sklearn.linear_model import SGDRegressor, LogisticRegression
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor, RandomForestClassifier, GradientBoostingClassifier
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from sklearn.metrics import precision_score, recall_score, f1_score, fbeta_score
 from sklearn.metrics import roc_curve, roc_auc_score, classification_report, accuracy_score, confusion_matrix 
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -164,7 +164,7 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
     best_model = SGDRegressor(**filtered_params)
     return best_model, best_hyperparameters, perf_metrics, best_rmse
 
-def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters_dict: dict):
+def tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, hyperparameters_dict: dict):
     '''
     Function loads in model training data and hyperparameters.
     Then uses Gridsearchcv and fits the training data to return the best performing model and score
@@ -199,14 +199,29 @@ def tune_regression_model_hyperparameters(model, xtrain, ytrain, hyperparameters
     best_score = result.best_score_
     print('Best Score:', result.best_score_)
     print('Best Hyperparameters: ', result.best_params_)
+    val_ypred = search.best_estimator_.predict(xvalidation)
+    val_rmse = mean_squared_error(yvalidation, val_ypred,squared=False)
+    val_r2 = r2_score(yvalidation, val_ypred)
+    test_ypred = search.best_estimator_.predict(xtest)
+    test_rmse = mean_squared_error(ytest, test_ypred, squared=False)
+    test_r2 = r2_score(ytest, test_ypred)
     cv_results = search.cv_results_
     perf_metrics = {
-        #'hyperparameters': [], 
-        'neg_root_mean_squared_error_score': []}
-    perf_metrics['neg_root_mean_squared_error_score'].append(result.best_score_)
+        'train_r2_score': [], 
+        'val_rmse_score': [],
+        'val_r2_score': [],
+        'test_rmse_score': [],
+        'test_r2_score': [],
+        }
+    perf_metrics['train_r2_score'].append(result.best_score_)
+    perf_metrics['val_rmse_score'].append(val_rmse)
+    perf_metrics['val_r2_score'].append(val_r2)
+    perf_metrics['test_rmse_score'].append(test_rmse)
+    perf_metrics['test_r2_score'].append(test_r2)
+
     # perf_metrics['hyperparameters'].extend(cv_results.get('params'))
     # perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
-
+    
     best_model = model(**best_hyperparameters)
     return best_model, best_hyperparameters, perf_metrics, best_score
 
@@ -300,17 +315,15 @@ def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, 
         The metrics for the best scoring combination
     '''
     if model_type == 'regression':
-        gridsearch = tune_regression_model_hyperparameters(model, xtrain, ytrain, param_grid)
+        gridsearch = tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, param_grid)
     elif model_type == 'classification':
-        gridsearch = tune_classification_model_hyperparameters(model, xtrain, ytrain, param_grid)
+        gridsearch = tune_classification_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, param_grid)
     gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_score = gridsearch
     
-    #simple_model(gridsearch_best_model, xtest, xvalidation, ytest, yvalidation)
-
     save_model(f"{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics, folder_name)
     return gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
 
-def evaluate_all_regression_models():
+def evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     '''
     Function loads the data with load_and_split_data() and has custom dicts of hyperparameters based on the model type.
     Then it calls tune_and_save_model() on each model and returns its outputs.
@@ -326,9 +339,9 @@ def evaluate_all_regression_models():
     dfr: tune_and_save_model() return values
         The DecisionTreeRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
     '''
-    data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
-    #ensure it only works when data has the same length as parameters
-    xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    # data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
+    # #ensure it only works when data has the same length as parameters
+    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
     #dict of dict with key = name of model, value = another dict
     # 2nd dict = model & hyperparameters
     # put hyperparams into yaml file (config)
@@ -381,7 +394,7 @@ def find_best_model(sgd, gb, rf, df):
     best_model = loaded_models[best_value_pos]
     best_hyperparameters = hyperparameters[best_value_pos]
     best_metrics = perf_metrics[best_value_pos]
-    print('best valyes = ', model_best_values)
+    print('best values = ', model_best_values)
     print('loaded_models = ', loaded_models)
     print('hyperparameters = ', hyperparameters)
     print('perf_metrics = ', perf_metrics)
@@ -483,7 +496,7 @@ def tune_classification_model_hyperparameters(model, xtrain, ytrain, hyperparame
     best_model = model(**best_hyperparameters)
     return best_model, best_hyperparameters, perf_metrics, best_score
 
-def evaluate_all_classification_models():
+def evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     '''
     Function loads the data with load_and_split_data() and has custom dicts of hyperparameters based on the model type.
     Then it calls tune_and_save_model() on each model and returns its outputs.
@@ -499,9 +512,9 @@ def evaluate_all_classification_models():
     dfc: tune_and_save_model() return values
         The DecisionTreeClassifier gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
     '''
-    data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
-    #ensure it only works when data has the same length as parameters
-    xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    # data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
+    # #ensure it only works when data has the same length as parameters
+    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
     hyperparameters_log_reg =  {"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
                                 "C": [1, 5, 10],   
                                 "penalty": ["l2", "l1", "elasticnet"],
@@ -537,8 +550,11 @@ def evaluate_all_classification_models():
 
 
 if __name__ == "__main__":
-    sgdr, gbr, rfr, dfr = evaluate_all_regression_models()
+    data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
+    xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+
+    sgdr, gbr, rfr, dfr = evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
     find_best_model(sgdr, gbr, rfr, dfr)
-    # log_reg, gbc, rfc, dfc = evaluate_all_classification_models()
+    # log_reg, gbc, rfc, dfc = evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
     # find_best_model(log_reg, gbc, rfc, dfc)
 

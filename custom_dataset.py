@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
 from math import isqrt
-from modelling import save_model
+from modelling import load_and_split_data, evaluate_all_classification_models, evaluate_all_regression_models, find_best_model, save_model
 from pandasgui import show
 from sklearn.model_selection import train_test_split, ParameterGrid
 from sklearn.metrics import r2_score
@@ -22,9 +22,9 @@ class AirbnbNightlyPriceImageDataset(Dataset):
     '''
     Class inherits a parent class All datasets that represent a map from keys to data samples should subclass it.
     '''
-    def __init__(self):
+    def __init__(self, label):
         super().__init__()
-        self.tab_data = load_airbnb('bedrooms')
+        self.tab_data = load_airbnb(label)
         self.cleaned_features = self.tab_data[0]
         self.cleaned_label = self.tab_data[1]
         # show(self.cleaned_features)
@@ -63,7 +63,7 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         '''
         return len(self.cleaned_features)
 
-dataset = AirbnbNightlyPriceImageDataset()
+dataset = AirbnbNightlyPriceImageDataset('bedrooms')
 # print(dataset[10])
 # print(len(dataset))
 # train set is 70%, test set is 30%
@@ -159,7 +159,7 @@ def train(model,
     inf_latency_batch = []
     val_r2_list = []
     val_rmse_list = []
-    
+
     for epoch in range(num_epochs):
         inf_latency_start_time = time.time()
         for batch in train_loader:
@@ -171,7 +171,7 @@ def train(model,
             if loss_name == "mse_loss":
                 loss = F.mse_loss(prediction, labels)
             elif loss_name == "cross_entropy":
-                loss = F.cross_entropy(prediction, labels)
+                loss = F.cross_entropy(prediction, labels.long())
             else:
                 print(f'{loss_name} is not a valid option. ')
             
@@ -247,12 +247,13 @@ class LogisticRegression(torch.nn.Module):
     '''
     Finish later
     '''
-    def __init__(self):
+    def __init__(self, possible_classes):
         super().__init__()
-        self.linear_layer = torch.nn.Linear(3, 1)
+        self.linear_layer = torch.nn.Linear(3, possible_classes)
 
     def forward(self, features):
-        return F.sigmoid(self.linear_layer(features))
+        #F.sigmoid for binary, F.softmax for multiclass
+        return F.softmax(self.linear_layer(features))
 
 class ImageClassifier(nn.Module):
     '''
