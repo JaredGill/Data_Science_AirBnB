@@ -1,6 +1,6 @@
 # Data_Science_AirBnB
 
-The aim of this project is to build a framework for the evaluation of various machine learning models which can then be applied to different datasets. It involves an initial step of exploratory data analysis on the first dataset - AirBnB data, which is cleaned and seperated into text, tabular and image data. Regression and classification models are then trained, tuned and evaluated to discover the best performing model which are saved as a .joblib file. Finally a configurable neural network was created.
+The aim of this project is to build a framework for the evaluation of various machine learning models which can then be applied to different datasets. It involves an initial step of exploratory data analysis on the first dataset - AirBnB data, which is cleaned and seperated into text, tabular and image data. Regression and classification models are then trained, tuned and evaluated to discover the best performing model which are saved as a .joblib file. Finally a configurable neural network was created and was compared to the single Regression or Classification models.
 
 ## Data Preparation
 - The tabular dataset was read in from a csv file and functions were defined to remove/edit the dataframe based on the column in its parameters.
@@ -213,4 +213,4 @@ The Neural Network can be seen here:
 ![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png) 
 
 # Conclusions
-For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction. Also more options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
+For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction.  Also more options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
