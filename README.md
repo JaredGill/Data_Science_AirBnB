@@ -34,13 +34,19 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 - Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete class labels(e.g. categories).
 - The models chosen were LogisticRegression, GradientBoostingClassifier, DecisionTreeClassifier, and RandomForestClassifier. The optimal model and hyperparameters were found using a similar methodology to the regression models.
 ### Evaluation
-- There are several types of evaluation to measure the performance of the classification models.
+There are several types of evaluation to measure the performance of the classification models.
 - Accuracy: the % of correct predictions of all predictions
 - Precision: ratio of correctly predicted positives to the total number of predicted positives. (The higher the recall indicates a decrease in false positives)
 - Recall: ratio of the correctly predicted positives to the total number of positives. (The higher the recall indicates a decrease in false negatives)
 - F1: This is a combination of precision and reall through the equation:
         - 2 * (precision * recall) / (precision + recall)
-        - It is good overall evaluation of the models to each other. But if false negatives or false positives are integral to the problem posed, Precision or Recall should be relied on.
+```python
+prec_score = precision_score(ytest, ypred, average=average_option)
+rec_score = recall_score(ytest, ypred, average=average_option)
+f1score = f1_score(ytest, ypred, average=average_option)
+accuracyscore = accuracy_score(ytest, ypred)
+```
+- F1 is good overall evaluation of the models to each other. But if false negatives or false positives are integral to the problem posed, Precision or Recall should be relied on.
 
 ## Models
 ### Stochastic Gradient Descent
