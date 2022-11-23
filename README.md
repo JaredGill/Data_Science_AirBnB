@@ -183,11 +183,21 @@ hyerparams = {"depth": 1, "hidden_layer_width": 32, "learning_rate": 0.0001, "lo
 metrics = {"RMSE_loss_train": 102.42122650146484, "RMSE_loss_val": 116.13488006591797, "RMSE_loss_test": 130.56866455078125, "R_squared_train": 0.10403494355995675, "R_squared_val": -0.23321586001659803, "R_squared_test": -0.2759211781248686, "training_duration": 56.70381259918213, "inference_latency": 0.15461945414543152}
 ```
 ![image](https://user-images.githubusercontent.com/108297203/203615063-2b88d30f-9b26-45d1-81bf-b791fbd4692e.png)
-Here we can observe the loss steadily decreases over trainging and validation set as the neural network finds the optimal set of parameters for the gradient.
+Here we can observe the loss steadily decreases over training and validation set as the neural network finds the optimal set of parameters for the gradient. But there are some sharp rises in the validation curve which when taking into account the difference between training vs validation RMSE and R2, may indicate overfitting.
 
 ## Reusing the Framework
-
-
+Previously for Regression models the label to predict was the Price per night. This can be changed for another feature instead simply by changing the label when obtaining and cleaning data:
+```python 
+# For individual regression models
+data = load_and_split_data("bedrooms", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
+# For Neural Networks
+dataset = AirbnbNightlyPriceImageDataset('bedrooms')
+```
+By setting these against each other in the file Pipeline.py, the better performing model can be found by comparing the metrics:
+```python
+From the individual regression models the optimal models metrics was:  {'train_r2_score': [0.8313700789943559], 'val_rmse_score': [0.4928672034366385], 'val_r2_score': [0.8239485104866229], 'test_rmse_score': [0.4894723843741415], 'test_r2_score': [0.8305807505707288]}
+From the linear regression neural network the optimal models metrics was:  {'RMSE_loss_train': 0.700879693031311, 'RMSE_loss_val': 0.7346341013908386, 'RMSE_loss_test': 0.8667487502098083, 'R_squared_train': 0.25440681140927424, 'R_squared_val': 0.31170815943857916, 'R_squared_test': 0.3332315274389551, 'training_duration': 53.28359770774841, 'inference_latency': 0.14548638224601745}
+```
 ![image](https://user-images.githubusercontent.com/108297203/203389157-246f61a5-f7b3-4921-bf0b-d50ea070905f.png)
 
 ![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
