@@ -31,7 +31,16 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 - Several other metrics such as Rsquared and mean absolute error can also be tracked. (https://www.mygreatlearning.com/blog/r-square/#:~:text=R-square%20is%20a%20goodness-of-fit%20measure%20for%20linear%20regression,variable%20on%20a%20convenient%200%20%E2%80%93%20100%25%20scale.)
 
 ## Classification
-- Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete output variables(e.g. categories)
+- Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete class labels(e.g. categories).
+- The models chosen were LogisticRegression, GradientBoostingClassifier, DecisionTreeClassifier, and RandomForestClassifier. The optimal model and hyperparameters were found using a similar methodology to the regression models.
+### Evaluation
+- There are several types of evaluation to measure the performance of the classification models.
+- Accuracy: the % of correct predictions of all predictions
+- Precision: ratio of correctly predicted positives to the total number of predicted positives. (The higher the recall indicates a decrease in false positives)
+- Recall: ratio of the correctly predicted positives to the total number of positives. (The higher the recall indicates a decrease in false negatives)
+- F1: This is a combination of precision and reall through the equation:
+        - 2 * (precision * recall) / (precision + recall)
+        - It is good overall evaluation of the models to each other. But if false negatives or false positives are integral to the problem posed, Precision or Recall should be relied on.
 
 ## Models
 ### Stochastic Gradient Descent
@@ -54,7 +63,7 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
     - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified
 ###
 ### Regularization
-- This parameter is present in SGDRegressor and Logstic Regression.
+- This parameter is present in SGDRegressor and Logistic Regression.
 - It reduces the overfitting/generalsation error (difference between training and validation sets) by discouraging a learning a more complex/flexible model.
 - More can be found at: 
     - https://www.pluralsight.com/guides/linear-lasso-ridge-regression-scikit-learn
