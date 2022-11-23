@@ -198,24 +198,22 @@ By setting these against each other in the file Pipeline.py, the better performi
 From the individual regression models the optimal models metrics was:  {'train_r2_score': [0.8313700789943559], 'val_rmse_score': [0.4928672034366385], 'val_r2_score': [0.8239485104866229], 'test_rmse_score': [0.4894723843741415], 'test_r2_score': [0.8305807505707288]}
 From the linear regression neural network the optimal models metrics was:  {'RMSE_loss_train': 0.700879693031311, 'RMSE_loss_val': 0.7346341013908386, 'RMSE_loss_test': 0.8667487502098083, 'R_squared_train': 0.25440681140927424, 'R_squared_val': 0.31170815943857916, 'R_squared_test': 0.3332315274389551, 'training_duration': 53.28359770774841, 'inference_latency': 0.14548638224601745}
 ```
-![image](https://user-images.githubusercontent.com/108297203/203389157-246f61a5-f7b3-4921-bf0b-d50ea070905f.png)
+This suggests the best model was a regression model was the single StochasticGradientDescentRegressor by looking at its metrics. Its train and validation R-sqaured score is very similar indicating a well rounded model, whereas the Neural Network has a considerably larger change in R-sqaured suggesting it performed poorly.
+![image](https://user-images.githubusercontent.com/108297203/203643688-a159293a-f522-4178-b443-3ca49952d6e8.png)
 
-![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
-- These images show the drastic difference in loss between the diverse configs. The bottom image is a close up view of the best performing as opposed to the two runs which had a terrible performance in comparison.
-- The R-squared and rmse was also calculated for all 3 train, validation and test sets. The figures for train and validation were compared to observe and decrease any overfitting: 
+- These images show a similar trend between training and validation. However it is apparent that the light blue configuration performed well in training, it was erratic in validation indicating overfitting thus the orange line was selected as it performed best in the validation RMSE.
+- In this run the Neural Networks best hyperparameters found were: 
 ```python
-{"RMSE_loss_train": 0.8288193345069885, "RMSE_loss_val": 0.8430336117744446, "RMSE_loss_test": 0.6353606581687927, "R_squared_train": 0.2855689986481355, "R_squared_val": 0.26073228757584077, "R_squared_test": 0.3644241055577916, "training_duration": 53.118608713150024, "inference_latency": 0.14666998505592346}
-```
-- The metrics show that the train and validation sets RMSE and R-squared values are very similar which indicates the model has not been overfit.
-- The test sets root mean squared error was used determine the optimal configuration. This can be seen as the orange line in the second graph above.
-- In this run the best hyperparameters found were: 
-```python
-{"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+{"depth": 1, "hidden_layer_width": 16, "learning_rate": 0.0001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
 ```
 - A representation of this network would appear as:
 ![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png)
+- The single StochasticGradientDescentRegressor model can be represented in the scatter graph:
+![image](https://user-images.githubusercontent.com/108297203/203645621-cb25c540-0526-405b-814c-6e82ee82cb27.png)
+- Here the prediction for the number of bedrooms generally follows the trend of the original label to some degree of success, but it is far from ideal with many predictions not being accurate especially between 1 and 2 bedrooms. 
 
-- a
+# Conclusions
+For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction. Also more options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
 
 
 
