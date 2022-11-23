@@ -143,11 +143,16 @@ The training of each configuration of neural networks can be observed here:
 
 ![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
 - These images show the drastic difference in loss between the diverse configs. The bottom image is a close up view of the best performing as opposed to the two runs which had a terrible performance in comparison.
-- The R-squared and rmse was also calculated for all 3 train, validation and test sets. The figures for train and validation were compared to observe and decrease any overfitting: {"RMSE_loss_train": 0.8288193345069885, "RMSE_loss_val": 0.8430336117744446, "RMSE_loss_test": 0.6353606581687927, "R_squared_train": 0.2855689986481355, "R_squared_val": 0.26073228757584077, "R_squared_test": 0.3644241055577916, "training_duration": 53.118608713150024, "inference_latency": 0.14666998505592346}
-
+- The R-squared and rmse was also calculated for all 3 train, validation and test sets. The figures for train and validation were compared to observe and decrease any overfitting: 
+```python
+{"RMSE_loss_train": 0.8288193345069885, "RMSE_loss_val": 0.8430336117744446, "RMSE_loss_test": 0.6353606581687927, "R_squared_train": 0.2855689986481355, "R_squared_val": 0.26073228757584077, "R_squared_test": 0.3644241055577916, "training_duration": 53.118608713150024, "inference_latency": 0.14666998505592346}
+```
 - The metrics show that the train and validation sets RMSE and R-squared values are very similar which indicates the model has not been overfit.
 - The test sets root mean squared error was used determine the optimal configuration. This can be seen as the orange line in the second graph above.
-- In this run the best hyperparameters found were: {"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+- In this run the best hyperparameters found were: 
+```python
+{"depth": 2, "hidden_layer_width": 16, "learning_rate": 0.001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+```
 - A representation of this network would appear as:
 ![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png)
 
