@@ -77,12 +77,15 @@ accuracyscore = accuracy_score(ytest, ypred)
 
 
 ## Neural Networks
+### How they work
 - These are computing systems which are comprised of many layers of interconnected neurons. 
 ![image](https://user-images.githubusercontent.com/108297203/200390046-30515704-46c2-41e2-a751-d84341f99ae1.png)
 - Neural networks can have many layers and neurons, increasing these allows the network to perfrom more complex calculations.
 - Within each neuron in the network there is a linear function and a activation function(rectified-linear activation function or ReLU()). The ReLU computes the weighted sum of inputs and biases, which is in turn used to decide whether a neuron will be activated or not. 
 - When training the model Backpropogation is used to minimumse the loss function(mse for regression, cross entropy for multilcass classification) by adjusting network’s weights and biases. It reduce error rates and make the model reliable by increasing its generalization to prevent overfitting. Optimisers like stochastic gradient descent help prevent the model stopping at a local minima by giving weight to prev accumulated gradient over current gradient when at the local minima. 
-- Initially the data is divided into 3 dataloaders(train 70%, validation 15%, test 15%) which seperates their datasets into batches of 32. The model is trained in these batches over a number of epochs where it: 
+
+### Training a Neural Network
+- Initially the tabular data, with 'Price_Night' as the label, is divided into 3 dataloaders(train 70%, validation 15%, test 15%) which seperates their datasets into batches of 32. The model is trained in these batches over a number of epochs where it: 
 1. Performs a forward pass to get output or prediction from input
 2. Calculates the loss
 3. Calculates the gradients with backpropgation
@@ -111,7 +114,7 @@ for epoch in range(num_epochs):
         optimiser.zero_grad()
         batch_idx +=1
 ```
-- The validatoin set is evaluated with eval() function after every epoch, and the test set is evaluated once model has finished training. 
+- The validation set is evaluated with eval() function after every epoch, and the test set is evaluated once model has finished training. 
 - The tracked metrics were:
 ```python
 metrics = {'RMSE_loss_train': 0, 'RMSE_loss_val': 0,'RMSE_loss_test': 0,'R_squared_train': 0, 'R_squared_val': 0,'R_squared_test': 0,
@@ -134,9 +137,7 @@ config_dict = {'optimiser': ['torch.optim.SGD'],
 ```python 
 configs_list = generate_nn_configs()
 metrics_list = []
-trained_model_list = []
 rmse_metric = []
-hyperparameters = []
 for config in configs_list:
         hyperparameters.append(config)
 
@@ -162,8 +163,6 @@ for config in configs_list:
         linear_depth +=1 
         config_dict[f'relu{linear_depth}'] = nn.ReLU()
         config_dict['output'] = nn.Linear(10, 1)
-        #neurons for class last layer == to input classes
-        #softmax for ouptput
         model = LinearRegression(config_dict)
         
         try:
@@ -175,6 +174,20 @@ for config in configs_list:
             print('Error in neural network.')
 ```
 The training of each configuration of neural networks can be observed here:
+![image](https://user-images.githubusercontent.com/108297203/203613163-f15613b1-b574-4c29-8235-952bcf5d7dc1.png)
+
+![image](https://user-images.githubusercontent.com/108297203/203615364-aa732772-f7e4-4834-a1ac-25ae5952fe40.png)
+The first image shows how large the mse loss(yaxis) is over the number of batches(x-axis) for some variations of hyperparameters for training and validation sets. These were removed to produce the second image to compare the better performing models where most of the validation curves follow their counterpart in training suggesting model has not overfit (apart from one spike seen on the pink line in validation set). Of these models the best parameterised network had the hyperparameters and metrics:
+```python 
+hyerparams = {"depth": 1, "hidden_layer_width": 32, "learning_rate": 0.0001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
+metrics = {"RMSE_loss_train": 102.42122650146484, "RMSE_loss_val": 116.13488006591797, "RMSE_loss_test": 130.56866455078125, "R_squared_train": 0.10403494355995675, "R_squared_val": -0.23321586001659803, "R_squared_test": -0.2759211781248686, "training_duration": 56.70381259918213, "inference_latency": 0.15461945414543152}
+```
+![image](https://user-images.githubusercontent.com/108297203/203615063-2b88d30f-9b26-45d1-81bf-b791fbd4692e.png)
+Here we can observe the loss steadily decreases over trainging and validation set as the neural network finds the optimal set of parameters for the gradient.
+
+## Reusing the Framework
+
+
 ![image](https://user-images.githubusercontent.com/108297203/203389157-246f61a5-f7b3-4921-bf0b-d50ea070905f.png)
 
 ![image](https://user-images.githubusercontent.com/108297203/203389050-c9d51ece-bef5-4afa-a84f-7b887024732c.png)
