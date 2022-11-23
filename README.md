@@ -183,7 +183,7 @@ hyerparams = {"depth": 1, "hidden_layer_width": 32, "learning_rate": 0.0001, "lo
 metrics = {"RMSE_loss_train": 102.42122650146484, "RMSE_loss_val": 116.13488006591797, "RMSE_loss_test": 130.56866455078125, "R_squared_train": 0.10403494355995675, "R_squared_val": -0.23321586001659803, "R_squared_test": -0.2759211781248686, "training_duration": 56.70381259918213, "inference_latency": 0.15461945414543152}
 ```
 ![image](https://user-images.githubusercontent.com/108297203/203615063-2b88d30f-9b26-45d1-81bf-b791fbd4692e.png)
-Here we can observe the loss steadily decreases over training and validation set as the neural network finds the optimal set of parameters for the gradient. But there are some sharp rises in the validation curve which when taking into account the difference between training vs validation RMSE and R2, may indicate overfitting.
+Here we can observe the loss steadily decreases over training and validation set as the neural network finds the optimal set of parameters for the gradient. But there are some sharp rises in the validation curve which when taking into account the difference between training vs validation RMSE and R2, may indicate it is still not optimal.
 
 ## Reusing the Framework
 Previously for Regression models the label to predict was the Price per night. This can be changed for another feature instead simply by changing the label when obtaining and cleaning data:
@@ -199,23 +199,18 @@ From the individual regression models the optimal models metrics was:  {'train_r
 From the linear regression neural network the optimal models metrics was:  {'RMSE_loss_train': 0.700879693031311, 'RMSE_loss_val': 0.7346341013908386, 'RMSE_loss_test': 0.8667487502098083, 'R_squared_train': 0.25440681140927424, 'R_squared_val': 0.31170815943857916, 'R_squared_test': 0.3332315274389551, 'training_duration': 53.28359770774841, 'inference_latency': 0.14548638224601745}
 ```
 This suggests the best model was a regression model was the single StochasticGradientDescentRegressor by looking at its metrics. Its train and validation R-sqaured score is very similar indicating a well rounded model, whereas the Neural Network has a considerably larger change in R-sqaured suggesting it performed poorly.
+The single StochasticGradientDescentRegressor model can be represented in the scatter graph:
+![image](https://user-images.githubusercontent.com/108297203/203645621-cb25c540-0526-405b-814c-6e82ee82cb27.png)
+- Here the prediction for the number of bedrooms generally follows the trend of the original label to some degree of success, but it is far from ideal with many predictions not being accurate especially between 1 and 2 bedrooms.
+The Neural Network can be seen here:
 ![image](https://user-images.githubusercontent.com/108297203/203643688-a159293a-f522-4178-b443-3ca49952d6e8.png)
-
 - These images show a similar trend between training and validation. However it is apparent that the light blue configuration performed well in training, it was erratic in validation indicating overfitting thus the orange line was selected as it performed best in the validation RMSE.
 - In this run the Neural Networks best hyperparameters found were: 
 ```python
 {"depth": 1, "hidden_layer_width": 16, "learning_rate": 0.0001, "loss_func": "mse_loss", "optimiser": "torch.optim.SGD"}
 ```
 - A representation of this network would appear as:
-![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png)
-- The single StochasticGradientDescentRegressor model can be represented in the scatter graph:
-![image](https://user-images.githubusercontent.com/108297203/203645621-cb25c540-0526-405b-814c-6e82ee82cb27.png)
-- Here the prediction for the number of bedrooms generally follows the trend of the original label to some degree of success, but it is far from ideal with many predictions not being accurate especially between 1 and 2 bedrooms. 
+![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png) 
 
 # Conclusions
 For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction. Also more options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
-
-
-
-
-
