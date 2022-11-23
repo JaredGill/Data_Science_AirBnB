@@ -77,11 +77,47 @@ accuracyscore = accuracy_score(ytest, ypred)
 
 
 ## Neural Networks
-- These are computing systems which are comprised of many layers of interconnected units. 
+- These are computing systems which are comprised of many layers of interconnected neurons. 
 ![image](https://user-images.githubusercontent.com/108297203/200390046-30515704-46c2-41e2-a751-d84341f99ae1.png)
-- Neural networks can have many layers, the increase in layers allows the network to perfrom more complex calculations.
-- Each neuron in the network 
-- The
+- Neural networks can have many layers and neurons, increasing these allows the network to perfrom more complex calculations.
+- Within each neuron in the network there is a linear function and a activation function(rectified-linear activation function or ReLU()). The ReLU computes the weighted sum of inputs and biases, which is in turn used to decide whether a neuron will be activated or not. 
+- When training the model Backpropogation is used to minimumse the loss function(mse for regression, cross entropy for multilcass classification) by adjusting network’s weights and biases. It reduce error rates and make the model reliable by increasing its generalization to prevent overfitting. Optimisers like stochastic gradient descent help prevent the model stopping at a local minima by giving weight to prev accumulated gradient over current gradient when at the local minima. 
+- Initially the data is divided into 3 dataloaders(train 70%, validation 15%, test 15%) which seperates their datasets into batches of 32. The model is trained in these batches over a number of epochs where it: 
+1. Performs a forward pass to get output or prediction from input
+2. Calculates the loss
+3. Calculates the gradients with backpropgation
+4. Updates the parameters for weight and bias with optimiser
+5. Zeros the gradients for the next batch so the next occuring gradient is not a combination of old and new.
+```python
+for epoch in range(num_epochs):
+    inf_latency_start_time = time.time()
+    for batch in train_loader:
+        features, labels = batch
+        prediction = model(features
+        if loss_name == "mse_loss":
+            loss = F.mse_loss(prediction, labels)
+        elif loss_name == "cross_entropy":
+            loss = F.cross_entropy(prediction, labels.long())
+        else:
+            print(f'{loss_name} is not a valid option. ')
+
+        r2 = r2_score(labels.detach().numpy(), prediction.detach().numpy())
+        train_r2_batch.append(r2)
+        rmse = loss**(1/2.0) #- mse to the power of 0.5
+        train_rmse_batch.append(rmse.detach())
+
+        loss.backward()
+        optimiser.step()
+        optimiser.zero_grad()
+        batch_idx +=1
+```
+- The validatoin set is evaluated with eval() function after every epoch, and the test set is evaluated once model has finished training. 
+- The tracked metrics were:
+```python
+metrics = {'RMSE_loss_train': 0, 'RMSE_loss_val': 0,'RMSE_loss_test': 0,'R_squared_train': 0, 'R_squared_val': 0,'R_squared_test': 0,
+                'training_duration': 0, 'inference_latency': 0}
+```
+
 - To discover the best configuration for the neural network a list of possible combinations in generate_nn_configs(). 
 ```python
 config_dict = {'optimiser': ['torch.optim.SGD'],
