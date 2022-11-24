@@ -30,7 +30,7 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 -   The test set(15%) is used to show how the model will perform on unseen data
 
 ## Regression 
-- Regression is a commonly used supervised machine learning model that aims to grasp the link between independant variables (features, x-axis) and a dependant variable (label, y-axis) which gives a continous output(e.g. price).
+- Regression is a commonly used supervised machine learning model that aims to grasp the link between independant variables (features, x-axis) and a dependant variable (label, y-axis) which gives a continous output(in this project 'Price_Night' was chosen).
 - By predicting the continous outputs regression can be used to forecast on unseen data, usually via a line of best fit through data points.
 - Regression models chosen were StochasticGradientDescentRegressor, GradientBoostingRegressor, DecisionTreeRegressor, and RandomForestRegressor all found from sklearn.ensemble and sklearn.tree. These were trained on the same dataset and evaluated with gridsearchcv with custom hyperparameters to determine the optimal model. 
 ### Evaluation
@@ -39,7 +39,7 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 - Several other metrics such as Rsquared and mean absolute error can also be tracked. (https://www.mygreatlearning.com/blog/r-square/#:~:text=R-square%20is%20a%20goodness-of-fit%20measure%20for%20linear%20regression,variable%20on%20a%20convenient%200%20%E2%80%93%20100%25%20scale.)
 
 ## Classification
-- Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete class labels(e.g. categories).
+- Classification is similar to regression in that it is also a predictive model, but instead of a continous output it identifies discrete class labels(in this project 'Categories' was chosen).
 - The models chosen were LogisticRegression, GradientBoostingClassifier, DecisionTreeClassifier, and RandomForestClassifier. The optimal model and hyperparameters were found using a similar methodology to the regression models.
 ### Evaluation
 There are several types of evaluation to measure the performance of the classification models.
@@ -57,15 +57,39 @@ accuracyscore = accuracy_score(ytest, ypred)
 - F1 is good overall evaluation of the models to each other. But if false negatives or false positives are integral to the problem posed, Precision or Recall should be relied on.
 
 ## Models
-### Stochastic Gradient Descent
-- Usually a Gradient Descent optimisation technique (seen in image below) would be very computationally expensive with a large dataset, but Stochastic Gradient Descent selects a random data sample to calculate the derivitives instead of the whole dataset.
-- ![image](https://user-images.githubusercontent.com/108297203/200419171-2dd31e1a-1b87-44fa-a1e2-b716df9cff64.png)
-- By selecting a random point in the data to then travel down the slope to find the minimum for the label.
-- The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
+All individual models were tuned using GridSearchCV on their hyperparameters that were in the form of a dict. Once the optimal combination was found metrics of RMSE and R-squared(Regression), as well as the Accuracy, Precision, Recall and F1(Classification) were found using the validation and test set label prediction (ypred).  
+```python
+search = GridSearchCV(regression_model, param_grid=hyperparameters_dict, cv=5)
+result = search.fit(xtrain, ytrain)
+best_hyperparameters = result.best_params_
+val_ypred = search.best_estimator_.predict(xvalidation)
+test_ypred = search.best_estimator_.predict(xtest)
+```
+The best model was then chosen using the validation sets RMSE and Accuracy for Regression and Classification respectively. For both Regression and Classification there were 3 types of models used in both: DecisionTree, RandomForest, GradientBoosting. 
+
+### Decision Tree
+Decision Trees are an algorithm which be used with regression and classification problems. It is structured akin to a flowchart where the input features are at the root, and branch out to internal nodes where a test is performed on the features (for tabular data it could be if mean squared error loss is greater or lesser than a chosen number). These culminate into leaf nodes where the label is represented. In Multiclass classification this will be the Category, and for Regression it will be the Price per Night. 
+![image](https://user-images.githubusercontent.com/108297203/203807540-09b73448-d830-4d26-9f67-0ff892ff91db.png)
+- Left == Classification, Right = Regression
+- The decision and order for the split of the features is performed by the criterion to measure the impurity of a node. This criterion function is MSE in regression and Log_loss in classification which uses Shannon Information Gain instead of the Gini Impurity (more can be found on: https://www.mygreatlearning.com/blog/multiclass-classification-explained/)
+- The hyperparameter were:
+```python
+hyperparameters_dfr =  {'criterion': ['squared_error'], 'min_samples_split' : [2, 4, 8], "max_features": ["log2","sqrt"], 'max_depth': [2, 4, 6, 8, 10], "min_weight_fraction_leaf":[0.1, 0.2, 0.3, 0.4, 0.5]}
+hyperparameters_dfc =  {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8],"max_features": ["log2","sqrt"],'max_depth': [2, 4, 6, 8, 10], "min_weight_fraction_leaf":[0.1, 0.2, 0.3, 0.4, 0.5]}
+```
+- The decision and order for the split of the features is performed by the criterion to measure the impurity of a node. This criterion function is MSE in regression and Log_loss in classification which uses Shannon Information Gain instead of the Gini Impurity (more can be found on: https://www.mygreatlearning.com/blog/multiclass-classification-explained/)
+- Unfortunately Decision Trees are prone to overfitting and so doesnt generalise well to the new data in the validation and test set.
+
+### Random Forest Tree
+Random Forest improves upon Decision Trees with flexability increasing its accuracy. It does so by randomly establishing root nodes, and splitting nodes. So instead of having one Decision Tree using Information Gain, Random Forest will have many Decision trees and the training data wil be divided into these trees and selected randomly. The final prediction is etablished on the multiple Decision Trees - if the average mean of Decision Trees think an AirBnB listing should Categorised as a Treehouse and not a Chalet, Offbeat, etc then it will be predicted as such.
+- Hyperparameters:
+```python
+hyperparameters_rfr = {'criterion': ['squared_error'],'min_samples_split' : [2, 4, 8],'n_estimators': [100, 500, 1000, 1500],'max_depth': [4, 6, 8, 10]},
+hyperparameters_rfc = {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8],'n_estimators': [100, 500, 1000, 1500],'max_depth': [4, 6, 8, 10]}
+```
 
 ### Gradient Boosting
-- This ML model is sequential - it works to improve the previous models.
-- It works by building trees with the features to predict the label.
+- It works by building trees sequentially with the features to predict the label.
 ![image](https://user-images.githubusercontent.com/108297203/200449229-b4b34bd2-5b2a-4f56-be7e-d0908572257a.png)
     -  Initially it takes the average of the predicted label and calculates Pseudo Residual by: (Observed label - Predicted Label)
     -  These Pseudo Residual are mapped and averaged to the leafs in the first tree where its feature values follow along.
@@ -75,6 +99,19 @@ accuracyscore = accuracy_score(ytest, ypred)
         - Multiple small steps equates to a better prediction with lower Variance
     - Trees are added based on the errors from previous trees, i.e. the second tree will have Pseudo Residual based on the first tree scaled by learning rate.
     - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified
+- Hyperparameters:
+```python
+hyperparameters_gbr = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsample': [0.9, 0.5, 0.2, 0.1],'n_estimators': [100, 250, 500],'max_depth': [1, 2, 4, 6]}
+hyperparameters_gbc = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsample': [0.9, 0.5, 0.2, 0.1],'n_estimators': [100, 250, 500],'max_depth': [1, 2, 4, 6],}
+```
+
+### Stochastic Gradient Descent
+- Usually a Gradient Descent optimisation technique (seen in image below) would be very computationally expensive with a large dataset, but Stochastic Gradient Descent selects a random data sample to calculate the derivitives instead of the whole dataset.
+![image](https://user-images.githubusercontent.com/108297203/200419171-2dd31e1a-1b87-44fa-a1e2-b716df9cff64.png)
+- By selecting a random point in the data to then travel down the slope to find the minimum for the label.
+- The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
+
+
 ###
 ### Regularization
 - This parameter is present in SGDRegressor and Logistic Regression.
@@ -83,6 +120,17 @@ accuracyscore = accuracy_score(ytest, ypred)
     - https://www.pluralsight.com/guides/linear-lasso-ridge-regression-scikit-learn
     - https://towardsdatascience.com/regularization-in-machine-learning-76441ddcf99a
 
+## Metrics
+### Regression - Price per Night
+```python
+DecisionTree = {"train_r2_score": [0.29042839113251845], "val_rmse_score": [85.20584285642062], "val_r2_score": [0.43285131403217025], "test_rmse_score": [110.64104714480759], "test_r2_score": [-0.04487276062772283]}
+RandomForest = {"train_r2_score": [0.3226411832667643], "val_rmse_score": [76.17425012187206], "val_r2_score": [0.546711655881122], "test_rmse_score": [99.77954807083047], "test_r2_score": [0.15020549650156878]}
+GradientBoosting = {"train_r2_score": [0.3342542274100849], "val_rmse_score": [77.46018984566071], "val_r2_score": [0.5312780512550861], "test_rmse_score": [98.69833318677244], "test_r2_score": [0.16852252340935003]}
+SGDRegressor = {"train_r2_score": [0.35568769434379505], "val_rmse_score": [88.33703766444576], "val_r2_score": [0.39040157091919114], "test_rmse_score": [121.28197201436927], "test_r2_score": [-0.25551918203247803]}
+BestModel = RandomForestRegressor(max_depth=4) {'criterion': 'squared_error', 'max_depth': 4, 'min_samples_split': 2, 'n_estimators': 100}
+```
+This run of the models showed the RandomForest model was the best performing with the lowest Validation RMSE. Although when predicting Price per Night for AirBnB listings a RMSE of £76.17 is not acceptable for deployment of the model. All the models had a large disparity between train set and validation/test sets metrics, but comparing the Decision Tree and Random Forest its clear Random Forest models perform with a higher degree of accuracy. Gradient Boosting fell just short of Random Forest so it may warrant some furthur investigating in the future. 
+### Classification - Category
 
 ## Neural Networks
 ### How they work
@@ -203,7 +251,8 @@ dataset = AirbnbNightlyPriceImageDataset('bedrooms')
 ```
 By setting these against each other in the file Pipeline.py, the better performing model can be found by comparing the metrics:
 ```python
-From the individual regression models the optimal models metrics was:  {'train_r2_score': [0.8313700789943559], 'val_rmse_score': [0.4928672034366385], 'val_r2_score': [0.8239485104866229], 'test_rmse_score': [0.4894723843741415], 'test_r2_score': [0.8305807505707288]}
+'From the individual regression models the optimal models: SGDRegressor(alpha=1, eta0=0.005, learning_rate='adaptive', penalty='l1')'
+Its metrics were:  {'train_r2_score': [0.8313700789943559], 'val_rmse_score': [0.4928672034366385], 'val_r2_score': [0.8239485104866229], 'test_rmse_score': [0.4894723843741415], 'test_r2_score': [0.8305807505707288]}
 From the linear regression neural network the optimal models metrics was:  {'RMSE_loss_train': 0.700879693031311, 'RMSE_loss_val': 0.7346341013908386, 'RMSE_loss_test': 0.8667487502098083, 'R_squared_train': 0.25440681140927424, 'R_squared_val': 0.31170815943857916, 'R_squared_test': 0.3332315274389551, 'training_duration': 53.28359770774841, 'inference_latency': 0.14548638224601745}
 ```
 This suggests the best model was a regression model was the single StochasticGradientDescentRegressor by looking at its metrics. Its train and validation R-sqaured score is very similar indicating a well rounded model, whereas the Neural Network has a considerably larger change in R-sqaured suggesting it performed poorly.
@@ -221,4 +270,4 @@ The Neural Network can be seen here:
 ![image](https://user-images.githubusercontent.com/108297203/203393130-ae8414e7-488d-4730-bb5c-4c6926dcb6ae.png) 
 
 # Conclusions
-For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction.  Also more options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
+For predicted labels such as Price per night and Bedrooms the margin for error must be small, thus the individual models and neural networks should not be relied upon as they are. In the future a Multimodel Neural Network should be looked at to utilise the image and text data that was removed from the dataset to create a comprehensive model to make a prediction, as the individual models could not obtain a sufficient degree of accuracy in their predictions with numerical data alone. More options in the neural network configuration should be researched such as the batch size for dataloaders, different optimisers, depth and hiddel layer width. 
