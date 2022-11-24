@@ -35,7 +35,12 @@ xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_siz
 - Regression models chosen were StochasticGradientDescentRegressor, GradientBoostingRegressor, DecisionTreeRegressor, and RandomForestRegressor all found from sklearn.ensemble and sklearn.tree. These were trained on the same dataset and evaluated with gridsearchcv with custom hyperparameters to determine the optimal model. 
 ### Evaluation
 - Loss functions provide a measurement on the models performance.
-- The root mean squared error was the loss function chosen to determine the best model. More can be found about it here: https://www.brainstobytes.com/mean-absolute-error-vs-root-mean-square-error/
+- The root mean squared error was the loss function chosen to determine the best model. 
+```python
+val_rmse = mean_squared_error(yvalidation, val_ypred,squared=False)
+val_r2 = r2_score(yvalidation, val_ypred)
+```
+- More can be found about it here: https://www.brainstobytes.com/mean-absolute-error-vs-root-mean-square-error/
 - Several other metrics such as Rsquared and mean absolute error can also be tracked. (https://www.mygreatlearning.com/blog/r-square/#:~:text=R-square%20is%20a%20goodness-of-fit%20measure%20for%20linear%20regression,variable%20on%20a%20convenient%200%20%E2%80%93%20100%25%20scale.)
 
 ## Classification
@@ -72,7 +77,7 @@ Decision Trees are an algorithm which be used with regression and classification
 ![image](https://user-images.githubusercontent.com/108297203/203807540-09b73448-d830-4d26-9f67-0ff892ff91db.png)
 - Left == Classification, Right = Regression
 - The decision and order for the split of the features is performed by the criterion to measure the impurity of a node. This criterion function is MSE in regression and Log_loss in classification which uses Shannon Information Gain instead of the Gini Impurity (more can be found on: https://www.mygreatlearning.com/blog/multiclass-classification-explained/)
-- The hyperparameter were:
+Hyperparameters:
 ```python
 hyperparameters_dfr =  {'criterion': ['squared_error'], 'min_samples_split' : [2, 4, 8], "max_features": ["log2","sqrt"], 'max_depth': [2, 4, 6, 8, 10], "min_weight_fraction_leaf":[0.1, 0.2, 0.3, 0.4, 0.5]}
 hyperparameters_dfc =  {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8],"max_features": ["log2","sqrt"],'max_depth': [2, 4, 6, 8, 10], "min_weight_fraction_leaf":[0.1, 0.2, 0.3, 0.4, 0.5]}
@@ -82,7 +87,7 @@ hyperparameters_dfc =  {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8
 
 ### Random Forest Tree
 Random Forest improves upon Decision Trees with flexability increasing its accuracy. It does so by randomly establishing root nodes, and splitting nodes. So instead of having one Decision Tree using Information Gain, Random Forest will have many Decision trees and the training data wil be divided into these trees and selected randomly. The final prediction is etablished on the multiple Decision Trees - if the average mean of Decision Trees think an AirBnB listing should Categorised as a Treehouse and not a Chalet, Offbeat, etc then it will be predicted as such.
-- Hyperparameters:
+Hyperparameters:
 ```python
 hyperparameters_rfr = {'criterion': ['squared_error'],'min_samples_split' : [2, 4, 8],'n_estimators': [100, 500, 1000, 1500],'max_depth': [4, 6, 8, 10]},
 hyperparameters_rfc = {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8],'n_estimators': [100, 500, 1000, 1500],'max_depth': [4, 6, 8, 10]}
@@ -99,7 +104,7 @@ This model works by building trees sequentially with the features to predict the
         - Multiple small steps equates to a better prediction with lower Variance
     - Trees are added based on the errors from previous trees, i.e. the second tree will have Pseudo Residual based on the first tree scaled by learning rate.
     - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified
-- Hyperparameters:
+Hyperparameters:
 ```python
 hyperparameters_gbr = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsample': [0.9, 0.5, 0.2, 0.1],'n_estimators': [100, 250, 500],'max_depth': [1, 2, 4, 6]}
 hyperparameters_gbc = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsample': [0.9, 0.5, 0.2, 0.1],'n_estimators': [100, 250, 500],'max_depth': [1, 2, 4, 6],}
@@ -110,17 +115,17 @@ Usually a Gradient Descent optimisation technique (seen in image below) would be
 ![image](https://user-images.githubusercontent.com/108297203/200419171-2dd31e1a-1b87-44fa-a1e2-b716df9cff64.png)
 - By selecting a random point in the data to then travel down the slope to find the minimum for the label.
 - The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
-- Hyperparameters:
+Hyperparameters:
 ```python
 hyperparameters_sgdr =  {"learning_rate": ["constant", "adaptive", "optimal"], "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],"penalty": ["l2", "l1", "elasticnet"]} 
 ```
 
 ### Logistic Regression
 Despite its name this model is used to solve Classification problems as it uses a logistic function(softmax for multinomial) over a Linear model to map the predictions to probabilities with a threshold value. 
-![image](https://user-images.githubusercontent.com/108297203/203835668-1ce568a4-5082-4e7f-be85-b0d91ba20594.png)
 ![image](https://user-images.githubusercontent.com/108297203/203835956-a4066322-3eab-49ec-8d8d-1f6c2b6d7a52.png)
+
 Reference - https://dataaspirant.com/multinomial-logistic-regression-model-works-machine-learning/ 
-- Hyperparameters:
+Hyperparameters:
 ```python
 hyperparameters_log_reg =  {"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], "C": [1, 5, 10], "penalty": ["l2", "l1", "elasticnet"],"max_iter": [10000, 500000, 10000000, 1500000]}
 ```
