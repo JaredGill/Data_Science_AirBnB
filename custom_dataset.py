@@ -1,16 +1,14 @@
 import os
-import numpy as np
-import pandas as pd
 import time
 import torch
 import yaml
+import numpy as np
+import pandas as pd
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
-from math import isqrt
-from modelling import load_and_split_data, evaluate_all_classification_models, evaluate_all_regression_models, find_best_model, save_model
-from pandasgui import show
-from sklearn.model_selection import train_test_split, ParameterGrid
+from modelling import save_model
+from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import r2_score
 from torch import save, load
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -63,29 +61,18 @@ class AirbnbNightlyPriceImageDataset(Dataset):
         '''
         return len(self.cleaned_features)
 
-dataset = AirbnbNightlyPriceImageDataset('bedrooms')
-# print(dataset[10])
-# print(len(dataset))
-# train set is 70%, test set is 30%
-train_set_size = int(len(dataset) * 0.7)
-val_set_size = int(len(dataset) * 0.15)
-test_set_size = len(dataset) - train_set_size - val_set_size
-train_set, val_set, test_set = random_split(dataset=dataset, lengths=[train_set_size, val_set_size, test_set_size])
-train_loader = DataLoader(dataset=train_set, batch_size=32, shuffle=True)
-val_loader = DataLoader(dataset=train_set, batch_size=32)
-test_loader = DataLoader(dataset=test_set, batch_size=32)
-
 class LinearRegression(torch.nn.Module):#
     
-    # The __init__() is used to define any network layers that the model will use.
     def __init__(self, 
                 config
                 ):
+        '''
+        # The __init__() is used to define any network layers that the model will use.
+        '''
         super().__init__()
         self.layers = nn.Sequential(
             config
         )
-    # The forward() function is where the model is set up by stacking all the layers together.
     def forward(self, features):
         '''
         Builds the model by stacking all the layers together.
@@ -219,10 +206,7 @@ def train(model,
     model.test_loss = test_loss
     return model, metrics
 
-# tqdm use for pytorch to visualize something
-
 def eval(model, dataset):
-    #convert into numpy array
     losses=[]
     r2_list = []
     rmse_list = []
@@ -245,7 +229,7 @@ def eval(model, dataset):
 
 class LogisticRegression(torch.nn.Module):
     '''
-    Finish later
+    To be finished/unused
     '''
     def __init__(self, possible_classes):
         super().__init__()
@@ -257,7 +241,7 @@ class LogisticRegression(torch.nn.Module):
 
 class ImageClassifier(nn.Module):
     '''
-    Unused rn
+    To be finished/unused
     '''
     def __init__(self):
         # conv2d or convolutional neural network that performs convolution on the image is able to 
@@ -386,7 +370,7 @@ def find_best_nn(train_loader, val_loader, test_loader):
             trained_model, metrics = train(model, train_loader, val_loader, test_loader, 200, optimiser_name, learning_rate, loss_func)
             trained_model_list.append(trained_model)
             metrics_list.append(metrics)
-            rmse_metric.append(metrics['RMSE_loss_test'])
+            rmse_metric.append(metrics['RMSE_loss_val'])
         except:
             print('Error in neural network.')
             # trained_model_list.append('Error in neural network.')
@@ -405,7 +389,16 @@ def find_best_nn(train_loader, val_loader, test_loader):
 
     return best_model, best_metrics, best_hyperparameters
 
-
-best_model, best_metrics, best_hyperparameters = find_best_nn(train_loader, val_loader, test_loader)
-
-save_model('test', best_hyperparameters, best_model, best_metrics, "models/regression/neural_networks/")
+if __name__ == "__main__":
+    dataset = AirbnbNightlyPriceImageDataset('Price_Night')
+    print(dataset[10])
+    print(len(dataset))
+    train_set_size = int(len(dataset) * 0.7)
+    val_set_size = int(len(dataset) * 0.15)
+    test_set_size = len(dataset) - train_set_size - val_set_size
+    train_set, val_set, test_set = random_split(dataset=dataset, lengths=[train_set_size, val_set_size, test_set_size])
+    train_loader = DataLoader(dataset=train_set, batch_size=32, shuffle=True)
+    val_loader = DataLoader(dataset=train_set, batch_size=32)
+    test_loader = DataLoader(dataset=test_set, batch_size=32)
+    best_model, best_metrics, best_hyperparameters = find_best_nn(train_loader, val_loader, test_loader)
+    save_model('test', best_hyperparameters, best_model, best_metrics, "models/regression/neural_networks/")

@@ -1,25 +1,6 @@
 import pandas as pd
 from pandasgui import show
 
-#class TabData:
-    # '''
-    # A class to clean and prepare raw tabular data loaded in from a file.
-
-    # Attributes:
-    # ----------
-    # df: dataframe
-    #     Dataframe of raw data loaded in from file
-
-    # Methods:
-    # -------
-    # remove_rows_with_missing_ratings()
-    #     Removes any rows with NaN values in given column
-    # combine_description_strings()
-    #     Removes any rows with NaN values in description column, and concatenates multiple strings into 1 string.
-    # set_default_feature_values()
-    #     Replaces NaN values with int in given column
-    # '''
-#def __init__(self, path: str):
 def load_raw_data(path: str = "C:\\Users\\jared\\AiCore\\DS_Airbnb\\AirbnbDataSci\\structured\\AirBnbData.csv"):
     '''
     Loads the data from file path
@@ -118,7 +99,6 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
      '''
     df = clean_tabular_data()
     df = df.reset_index(drop=True)
-    #load df, remove string columns, remove 1 input column and make that into a seperate df called labels
     labels = pd.DataFrame()
     label_to_predict = df.pop(label)
     labels.insert(0, label, label_to_predict)
@@ -138,10 +118,15 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
         
 def clean_tabular_data():
     '''
-    
+    Calls several other functions to clean the data.
+
+    Returns:
+    --------
+    edit_str_df: Dataframe
+        Cleaned dataframe with rows missing 'Value_rate' removed, rows with NaN set to 1 in ["guests", "beds", "bathrooms", "bedrooms"], 
+        and the string descriptions concatenated
     '''
     raw_df = load_raw_data("C:\\Users\\jared\\AiCore\\DS_Airbnb\\AirbnbDataSci\\structured\\AirBnbData.csv")
-    #df = t.load_raw_data()
     remove_rows_df = remove_rows_with_missing_ratings(raw_df, 'Value_rate')
     #show(remove_rows_df)
     edit_nan_values_df = set_default_feature_values(remove_rows_df, ["guests", "beds", "bathrooms", "bedrooms"])

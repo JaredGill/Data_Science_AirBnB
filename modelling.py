@@ -1,4 +1,11 @@
-from pandasgui import show
+import datetime
+import inspect
+import joblib
+import json
+import os
+import torch
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.linear_model import SGDRegressor, LogisticRegression
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor, RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -12,14 +19,7 @@ from sklearn.preprocessing import scale
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from tabular_data import load_airbnb
-import datetime
-import inspect
-import joblib
-import json
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-import torch
+
 
 
 def load_and_split_data(label: str, str_cols: list):
@@ -46,7 +46,7 @@ def load_and_split_data(label: str, str_cols: list):
     x = airbnb[0]
     y = airbnb[1]
     x = scale(x)
-    np.random.seed(42)
+    #np.random.seed(42)
     xtrain, xtest, ytrain, ytest = train_test_split(x, y, test_size=0.3)
     xvalidation, xtest, yvalidation, ytest = train_test_split(xtest, ytest, test_size=0.5)
     return xtrain, xtest, xvalidation, ytrain, ytest, yvalidation
@@ -95,18 +95,18 @@ def simple_regression_model(model, xtrain, ytrain, xset, yset):
     plt.scatter(np.arange(samples), ypred, c='r', label='predictions')
     plt.scatter(np.arange(samples), yset, c='b', label='true labels', marker='x')
     plt.legend()
-    plt.title("AirBnB test and predicted data")
-    plt.xlabel('X-axis')
-    plt.ylabel('Price per night')
+    plt.title("AirBnB validation set original and predicted data")
+    plt.xlabel('Length of validation set')
+    plt.ylabel('Number of Bedrooms')
     plt.show()
 
     # visualize the original and predicted data in a plot.
     x_ax = range(len(yset))
     plt.plot(x_ax, yset, label="original")
     plt.plot(x_ax, ypred, label="predicted")
-    plt.title("AirBnB test and predicted data")
-    plt.xlabel('X-axis')
-    plt.ylabel('Price per night')
+    plt.title("AirBnB validation set original and predicted data")
+    plt.xlabel('Length of validation set')
+    plt.ylabel('Number of Bedrooms')
     plt.legend(loc='best',fancybox=True, shadow=True)
     plt.grid(True)
     plt.show() 
@@ -196,7 +196,7 @@ def tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytr
     search = GridSearchCV(regression_model, param_grid=hyperparameters_dict, cv=5)
     result = search.fit(xtrain, ytrain)
     best_hyperparameters = result.best_params_
-    best_score = result.best_score_
+    #best_score = result.best_score_
     print('Best Score:', result.best_score_)
     print('Best Hyperparameters: ', result.best_params_)
     val_ypred = search.best_estimator_.predict(xvalidation)
@@ -218,12 +218,12 @@ def tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytr
     perf_metrics['val_r2_score'].append(val_r2)
     perf_metrics['test_rmse_score'].append(test_rmse)
     perf_metrics['test_r2_score'].append(test_r2)
-
+    evaluation_score = perf_metrics['val_rmse_score']
     # perf_metrics['hyperparameters'].extend(cv_results.get('params'))
     # perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
     
     best_model = model(**best_hyperparameters)
-    return best_model, best_hyperparameters, perf_metrics, best_score
+    return best_model, best_hyperparameters, perf_metrics, evaluation_score
 
 def save_model(model_name: str, hyperparameters, model, metrics, foldername: str = "models/regression/linear_regression"):
     '''
@@ -305,8 +305,8 @@ def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, 
     
     Returns:
     --------
-    gridsearch_best_score: int
-        T  he best score of all gridsearch combinations(rsquared for regression, accuracy for classification)
+    gridsearch_evaluation_score: int
+        The best score of all gridsearch combinations(val_rmse for regression, accuracy for classification)
     gridsearch_best_model: sklearn model
         The model with hyperparameters
     gridsearch_best_hyperparameters: dict
@@ -318,10 +318,10 @@ def tune_and_save_model(model_type, model, param_grid, model_name, folder_name, 
         gridsearch = tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, param_grid)
     elif model_type == 'classification':
         gridsearch = tune_classification_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, param_grid)
-    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_best_score = gridsearch
+    gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics, gridsearch_evaluation_score = gridsearch
     
     save_model(f"{model_name}", gridsearch_best_hyperparameters, gridsearch_best_model, gridsearch_perf_metrics, folder_name)
-    return gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
+    return gridsearch_evaluation_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
 
 def evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation):
     '''
@@ -378,23 +378,33 @@ def evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yv
     #print(sgdr, gbr, rfr, dfr)
     return sgdr, gbr, rfr, dfr
 
-def find_best_model(sgd, gb, rf, df):
+def find_best_model(model_type: str, sgd, gb, rf, df):
+    '''
+    Function takes in the four models and finds the best model
+    This is found via minimum option from the list of val_rmse is chosen as for regression, and the maximum for accuracy in classification.
+    both of which indicate a better model the higher the value
+    '''
     models = [sgd, gb, rf, df]
-    model_best_values = []
+    model_evaluation_scores = []
     loaded_models = []
     hyperparameters = []
     perf_metrics = []
     for i in models:
-        model_best_values.append(i[0])
+        model_evaluation_scores.append(i[0])
         loaded_models.append(i[1])
         hyperparameters.append(i[2])
         perf_metrics.append(i[3])
-    best_value = max(model_best_values)
-    best_value_pos = model_best_values.index(best_value)
+    if model_type == 'Regression':
+        best_value = min(model_evaluation_scores)
+    elif model_type == 'Classification':
+        best_value = max(model_evaluation_scores)
+    else: 
+        print('Not a valid type of ML model')
+    best_value_pos = model_evaluation_scores.index(best_value)
     best_model = loaded_models[best_value_pos]
     best_hyperparameters = hyperparameters[best_value_pos]
     best_metrics = perf_metrics[best_value_pos]
-    print('best values = ', model_best_values)
+    print('best values = ', model_evaluation_scores)
     print('loaded_models = ', loaded_models)
     print('hyperparameters = ', hyperparameters)
     print('perf_metrics = ', perf_metrics)
@@ -402,9 +412,6 @@ def find_best_model(sgd, gb, rf, df):
     print(best_value)
     print(best_model, best_hyperparameters, best_metrics)
     return best_model, best_hyperparameters, best_metrics
-
-
-
 
 
 def simple_classification():
@@ -440,18 +447,15 @@ def classification_eval_metrics(ytest, ypred, average_option: str = 'weighted'):
     prec_score = precision_score(ytest, ypred, average=average_option)
     rec_score = recall_score(ytest, ypred, average=average_option)
     f1score = f1_score(ytest, ypred, average=average_option)
-    fbetascore = fbeta_score(ytest, ypred, beta=2, average=average_option)
-    print('Precision score: ', prec_score)
-    print('Recall score: ', rec_score)
-    print('F1 score', f1score)
-    print('F2 score', fbetascore)
+    accuracyscore = accuracy_score(ytest, ypred)
+    return prec_score, rec_score, f1score, accuracyscore
 
 def visualise_confusion_matrix(confusion_matrix):
     display = ConfusionMatrixDisplay(confusion_matrix)
     display.plot()
     plt.show()
 
-def tune_classification_model_hyperparameters(model, xtrain, ytrain, hyperparameters_dict: dict):
+def tune_classification_model_hyperparameters(model, xtrain, xtest, xvalidation, ytrain, ytest, yvalidation, hyperparameters_dict: dict):
     '''
     Function loads in model training data and hyperparameters.
     Then uses Gridsearchcv and fits the training data to return the best performing model and score
@@ -486,13 +490,25 @@ def tune_classification_model_hyperparameters(model, xtrain, ytrain, hyperparame
     best_score = result.best_score_
     print('Best Score:', result.best_score_)
     print('Best Hyperparameters: ', result.best_params_)
-    cv_results = search.cv_results_
-    perf_metrics = {
-        #'hyperparameters': [], 
-        'validation_accuracy': []}
-    perf_metrics['validation_accuracy'].append(result.best_score_)
-    
+    val_ypred = search.best_estimator_.predict(xvalidation)
+    val_prec_score, val_rec_score, val_f1score, val_accuracyscore = classification_eval_metrics(yvalidation, val_ypred)
+    test_ypred = search.best_estimator_.predict(xtest)
+    test_prec_score, test_rec_score, test_f1score, test_accuracyscore = classification_eval_metrics(ytest, test_ypred)
 
+    cv_results = search.cv_results_
+    perf_metrics = {'train_accuracy': [], 'val_f1_score': [],'val_precision_score': [],'val_recall_score': [],'val_accuracy': [],
+                    'test_f1_score': [],'test_precision_score': [],'test_recall_score': [],'test_accuracy': [],
+                    }
+    perf_metrics['train_accuracy'].append(result.best_score_)
+    perf_metrics['val_f1_score'].append(val_f1score)
+    perf_metrics['val_precision_score'].append(val_prec_score)
+    perf_metrics['val_recall_score'].append(val_rec_score)
+    perf_metrics['val_accuracy'].append(val_accuracyscore)
+    perf_metrics['test_f1_score'].append(test_f1score)
+    perf_metrics['test_precision_score'].append(test_prec_score)
+    perf_metrics['test_recall_score'].append(test_rec_score)
+    perf_metrics['test_accuracy'].append(test_accuracyscore)
+    
     best_model = model(**best_hyperparameters)
     return best_model, best_hyperparameters, perf_metrics, best_score
 
@@ -552,9 +568,15 @@ def evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest
 if __name__ == "__main__":
     data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
-
     sgdr, gbr, rfr, dfr = evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
-    find_best_model(sgdr, gbr, rfr, dfr)
-    # log_reg, gbc, rfc, dfc = evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
-    # find_best_model(log_reg, gbc, rfc, dfc)
+    find_best_model('Regression', sgdr, gbr, rfr, dfr)
 
+    data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
+    xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    log_reg, gbc, rfc, dfc = evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+    find_best_model('Classification', log_reg, gbc, rfc, dfc)
+
+    # data = load_and_split_data("bedrooms", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
+    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    # model = SGDRegressor(alpha=0.01, eta0=0.001, learning_rate='adaptive', penalty='l1')
+    # simple_regression_model(model, xtrain, ytrain, xvalidation, yvalidation)
