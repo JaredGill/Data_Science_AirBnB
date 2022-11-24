@@ -2,6 +2,14 @@
 
 The aim of this project is to build a framework for the evaluation of various machine learning models which can then be applied to different datasets. It involves an initial step of exploratory data analysis on the first dataset - AirBnB data, which is cleaned and seperated into text, tabular and image data. Regression and classification models are then trained, tuned and evaluated to discover the best performing model which are saved as a .joblib file. Finally a configurable neural network was created and was compared to the single Regression or Classification models.
 
+### Built with
+- matplotlib == 3.6.0 (Visualise models individual regression models)
+- numpy == 1.23.3 (Compile data to retrieve metrics)
+- pandas == 1.5.0 (Clean data)
+- scikit-learn == 1.1.2 (Import regression and classification models, transformations and evaluation metrics)
+- torch == (Build the Neural Network models and Dataloaders)
+- TensorBoard == 2.10.1 (Visualise the training and validation mean squared error loss as the models is trained)
+
 ## Data Preparation
 - The tabular dataset was read in from a csv file and functions were defined to remove/edit the dataframe based on the column in its parameters.
     - The tabular data had rows removed if certain columns were NaN or some NaN values were set to a specific int.
