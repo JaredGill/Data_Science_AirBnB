@@ -95,7 +95,7 @@ hyperparameters_rfc = {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8]
 
 ### Gradient Boosting
 This model works by building trees sequentially with the features to predict the label.
-![image](https://user-images.githubusercontent.com/108297203/200449229-b4b34bd2-5b2a-4f56-be7e-d0908572257a.png)
+- ![image](https://user-images.githubusercontent.com/108297203/200449229-b4b34bd2-5b2a-4f56-be7e-d0908572257a.png)
     -  Initially it takes the average of the predicted label and calculates Pseudo Residual by: (Observed label - Predicted Label)
     -  These Pseudo Residual are mapped and averaged to the leafs in the first tree where its feature values follow along.
     -  Pseudo Residual are then added to the training label
