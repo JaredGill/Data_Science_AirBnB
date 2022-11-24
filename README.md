@@ -106,20 +106,58 @@ hyperparameters_gbc = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsam
 ```
 
 ### Stochastic Gradient Descent
-- Usually a Gradient Descent optimisation technique (seen in image below) would be very computationally expensive with a large dataset, but Stochastic Gradient Descent selects a random data sample to calculate the derivitives instead of the whole dataset.
+Usually a Gradient Descent optimisation technique (seen in image below) would be very computationally expensive with a large dataset, but Stochastic Gradient Descent selects a random data sample to calculate the derivitives instead of the whole dataset.
 ![image](https://user-images.githubusercontent.com/108297203/200419171-2dd31e1a-1b87-44fa-a1e2-b716df9cff64.png)
 - By selecting a random point in the data to then travel down the slope to find the minimum for the label.
 - The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
-
+- Hyperparameters:
+```python
+hyperparameters_sgdr =  {"learning_rate": ["constant", "adaptive", "optimal"], "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],"penalty": ["l2", "l1", "elasticnet"]} 
+```
 
 ### Logistic Regression
-
+Despite its name this model is used to solve Classification problems as it uses a logistic function(softmax for multinomial) over a Linear model to map the predictions to probabilities with a threshold value. 
+![image](https://user-images.githubusercontent.com/108297203/203835668-1ce568a4-5082-4e7f-be85-b0d91ba20594.png)
+![image](https://user-images.githubusercontent.com/108297203/203835956-a4066322-3eab-49ec-8d8d-1f6c2b6d7a52.png)
+Reference - https://dataaspirant.com/multinomial-logistic-regression-model-works-machine-learning/ 
+- Hyperparameters:
+```python
+hyperparameters_log_reg =  {"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'], "C": [1, 5, 10], "penalty": ["l2", "l1", "elasticnet"],"max_iter": [10000, 500000, 10000000, 1500000]}
+```
 ### Regularization
-- This parameter is present in SGDRegressor and Logistic Regression.
+- This parameter is present in SGDRegressor and Logistic Regression as the 'penalty' hyperparameter.
 - It reduces the overfitting/generalsation error (difference between training and validation sets) by discouraging a learning a more complex/flexible model.
 - More can be found at: 
     - https://www.pluralsight.com/guides/linear-lasso-ridge-regression-scikit-learn
     - https://towardsdatascience.com/regularization-in-machine-learning-76441ddcf99a
+
+## Code Structure
+```python
+data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
+xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+sgdr, gbr, rfr, dfr = evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+find_best_model('Regression', sgdr, gbr, rfr, dfr)
+data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
+xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+log_reg, gbc, rfc, dfc = evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest, yvalidation)
+find_best_model('Classification', log_reg, gbc, rfc, dfc)
+```
+The data is loaded and split with the Label as the first parameter in load_and_split_data(), and the columns to remove as the second parameter. Data is then used as parameters in evaluate all_regression_models() and evaluate_all_classification_models() set equal to 4 variables that denote their specific models. Each variable is a tuple of the validation score the best model is determined on, the model with the best hyperparameters passed in, the best hyperparameters for that specific model, and the performance metrics. Apart from the validation score these are all saved to a folder using:
+```python
+elif pytorch_check == False:
+    target_path = os.path.join(curr_dir, foldername)
+    if not os.path.exists(target_path):
+        os.makedirs(target_path)
+    model_filename = os.path.join(target_path, f'{model_name}_model.joblib')
+    joblib.dump(model, model_filename)
+    hyperparameters_filename = os.path.join(target_path, f'{model_name}_hyperparameters.json')
+    metrics_filename = os.path.join(target_path, f'{model_name}_metrics.json')
+    with open(hyperparameters_filename, 'w') as f:
+        json.dump(hyperparameters, f)
+    with open(metrics_filename, 'w') as f:
+        json.dump(metrics, f)
+```
+The 4 variables and their type of model is passed into find_best_model() which ascertains the best performing model and prints it. 
 
 ## Metrics
 ### Regression - Price per Night
@@ -139,6 +177,8 @@ GradientBoosting = {"train_accuracy": [0.4320807544945476], "val_f1_score": [0.3
 LogisticRegression = {"train_accuracy": [0.3907161803713528], "val_f1_score": [0.37573694557453224], "val_precision_score": [0.48118674889310564], "val_recall_score": [0.4032258064516129], "val_accuracy": [0.4032258064516129], "test_f1_score": [0.3437327463209816], "test_precision_score": [0.3452698412698413], "test_recall_score": [0.36], "test_accuracy": [0.36]}
 BestModel = LogisticRegression{"C": 1, "max_iter": 10000, "penalty": "l2", "solver": "newton-cg"}
 ```
+Again here the RandomForest outperforms the DecisionTree furthur solidifying its sub-standard accuracy. Yet GradientBoosting performed better here than in the regression models. The optimal model with only the numerical data was LogisticRegression, and the lack of image and text analysis has decreased the accuracy across all Regression and Classification models as these are integral parts of the dataset that cannot be used as inputs in individual models in its current format.
+
 ## Neural Networks
 ### How they work
 - These are computing systems which are comprised of many layers of interconnected neurons. 
