@@ -105,6 +105,7 @@ def train(model,
     The validation set is evaluated after every epoch using eval(), and the test set is evaluated once at the end.
     For every batch of the training set, the loss is calcualted and written to the SummaryWriter() to be viewed on TensorBoard.
     Similarly the validation set loss is also but on a seperate graph in Tensorboard after every epoch.
+    TensorBoard stores each run of data in seperate folder called runs in start directory.
     To save the metrics each is datasets rmse and r2 are appended to a metrics dict. 
     Some have to be in a list from whih the average is calclated then passed to dict
 
@@ -130,11 +131,7 @@ def train(model,
 
     if optimiser_name == "torch.optim.SGD":
         optimiser= torch.optim.SGD(model.parameters(), learning_rate)
-    #model.parameters() passes the model parameters from LinearRegression class init into the first arg for optimiser
-    #optimiser = torch.optim.SGD(model.parameters(), lr=0.00001) # 0.00001
 
-    # loss should go down when training model
-    # stores each run of data in seperate folder called runs in start directory
     writer = SummaryWriter()
     batch_idx = 0
     train_start_time = time.time()
@@ -152,7 +149,6 @@ def train(model,
         for batch in train_loader:
             features, labels = batch
             prediction = model(features)
-            # compare prediction to labels to obtain loss
             # mse for regression, cross entropy for multiclass classification
             # cross-entropy formula describes how closely the predicted distribution is to the true distribution as a probability
             if loss_name == "mse_loss":
@@ -164,7 +160,7 @@ def train(model,
             
             r2 = r2_score(labels.detach().numpy(), prediction.detach().numpy())
             train_r2_batch.append(r2)
-            rmse = loss**(1/2.0) #- mse to the power of 0.5
+            rmse = loss**(1/2.0) 
             train_rmse_batch.append(rmse.detach())
             # backpropagation aims to minimize the loss function by adjusting network’s weights and biases.
             # It reduce error rates and make the model reliable by increasing its generalization to prevent overfitting
@@ -202,7 +198,6 @@ def train(model,
     test_loss, test_r2, test_rmse = eval(model, test_loader)
     metrics['R_squared_test'] = float(np.average(test_r2))
     metrics['RMSE_loss_test'] = float(np.average(test_rmse))    
-    #print(metrics)
     model.test_loss = test_loss
     return model, metrics
 

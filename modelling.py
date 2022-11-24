@@ -128,7 +128,6 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
     model: regression model
         Input regression model with hyperparameters
     '''
-    # iterate through every possible variation and get rmse from all, the best model & hyperparameters will be from rmse 
     sgdr = model()
     perf_metrics = {"hyperparameters": [], "validation_RMSE": [], "r2_score": []}
     grid = list(ParameterGrid(hyperparameters_dict))
@@ -150,14 +149,12 @@ def custom_tune_regression_model_hyperparameters(model, train_features, train_la
         perf_metrics['validation_RMSE'].append(rmse)
         perf_metrics['r2_score'].append(score)
 
-    #print(perf_metrics)
     best_rmse = min(perf_metrics["validation_RMSE"])
     print("best rmse", best_rmse)
     for item, value in perf_metrics.items():
         if best_rmse in value:
             best_rmse_pos = value.index(best_rmse)
             print(value.index(best_rmse))
-    #print(models)
     print(models[best_rmse_pos])
     best_hyperparameters = models[best_rmse_pos]
     print(best_hyperparameters)
@@ -196,7 +193,6 @@ def tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytr
     search = GridSearchCV(regression_model, param_grid=hyperparameters_dict, cv=5)
     result = search.fit(xtrain, ytrain)
     best_hyperparameters = result.best_params_
-    #best_score = result.best_score_
     print('Best Score:', result.best_score_)
     print('Best Hyperparameters: ', result.best_params_)
     val_ypred = search.best_estimator_.predict(xvalidation)
@@ -219,8 +215,7 @@ def tune_regression_model_hyperparameters(model, xtrain, xtest, xvalidation, ytr
     perf_metrics['test_rmse_score'].append(test_rmse)
     perf_metrics['test_r2_score'].append(test_r2)
     evaluation_score = perf_metrics['val_rmse_score']
-    # perf_metrics['hyperparameters'].extend(cv_results.get('params'))
-    # perf_metrics['neg_root_mean_squared_error_score'].extend(cv_results.get('mean_test_score'))
+
     
     best_model = model(**best_hyperparameters)
     return best_model, best_hyperparameters, perf_metrics, evaluation_score
@@ -339,12 +334,7 @@ def evaluate_all_regression_models(xtrain, xtest, xvalidation, ytrain, ytest, yv
     dfr: tune_and_save_model() return values
         The DecisionTreeRegressor gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
     '''
-    # data = load_and_split_data("Price_Night", ["ID", "Category", "Title", "Description", "Amenities", "Location", "url"])
-    # #ensure it only works when data has the same length as parameters
-    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
-    #dict of dict with key = name of model, value = another dict
-    # 2nd dict = model & hyperparameters
-    # put hyperparams into yaml file (config)
+    
     hyperparameters_sgdr =  {"learning_rate": ["constant", "adaptive", "optimal"], 
                             "eta0": [0.001, 0.005, 0.01, 0.05, 0.1, 0.5], 
                             "alpha": [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1],
@@ -418,7 +408,6 @@ def simple_classification():
     xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
     scaler = StandardScaler()
     lr = LogisticRegression()
-    #should Principal Component Analysis(PCA) be used????
     model1 = Pipeline(steps=[('standardize', scaler),
                         ('log_reg', lr)])
     model1.fit(xtrain, ytrain)
@@ -528,9 +517,7 @@ def evaluate_all_classification_models(xtrain, xtest, xvalidation, ytrain, ytest
     dfc: tune_and_save_model() return values
         The DecisionTreeClassifier gridsearch_best_score, gridsearch_best_model, gridsearch_best_hyperparameters, gridsearch_perf_metrics
     '''
-    # data = load_and_split_data("Category", ["ID", "Title", "Description", "Amenities", "Location", "url"])
-    # #ensure it only works when data has the same length as parameters
-    # xtrain, xtest, xvalidation, ytrain, ytest, yvalidation = data
+    
     hyperparameters_log_reg =  {"solver": ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
                                 "C": [1, 5, 10],   
                                 "penalty": ["l2", "l1", "elasticnet"],
