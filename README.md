@@ -56,7 +56,7 @@ accuracyscore = accuracy_score(ytest, ypred)
 ```
 - F1 is good overall evaluation of the models to each other. But if false negatives or false positives are integral to the problem posed, Precision or Recall should be relied on.
 
-## Models
+## Models - Background
 All individual models were tuned using GridSearchCV on their hyperparameters that were in the form of a dict. Once the optimal combination was found metrics of RMSE and R-squared(Regression), as well as the Accuracy, Precision, Recall and F1(Classification) were found using the validation and test set label prediction (ypred).  
 ```python
 search = GridSearchCV(regression_model, param_grid=hyperparameters_dict, cv=5)
@@ -65,7 +65,7 @@ best_hyperparameters = result.best_params_
 val_ypred = search.best_estimator_.predict(xvalidation)
 test_ypred = search.best_estimator_.predict(xtest)
 ```
-The best model was then chosen using the validation sets RMSE and Accuracy for Regression and Classification respectively. For both Regression and Classification there were 3 types of models used in both: DecisionTree, RandomForest, GradientBoosting. 
+The best model was then chosen using the validation sets RMSE and Accuracy for Regression and Classification respectively. For both Regression and Classification there were 3 types of models used in both: DecisionTree, RandomForest, GradientBoosting. StochasticGradientDescent was used exclusively for regression, as was LogisticRegression for Classification.
 
 ### Decision Tree
 Decision Trees are an algorithm which be used with regression and classification problems. It is structured akin to a flowchart where the input features are at the root, and branch out to internal nodes where a test is performed on the features (for tabular data it could be if mean squared error loss is greater or lesser than a chosen number). These culminate into leaf nodes where the label is represented. In Multiclass classification this will be the Category, and for Regression it will be the Price per Night. 
@@ -89,7 +89,7 @@ hyperparameters_rfc = {'criterion': ['log_loss'],'min_samples_split' : [2, 4, 8]
 ```
 
 ### Gradient Boosting
-- It works by building trees sequentially with the features to predict the label.
+This model works by building trees sequentially with the features to predict the label.
 ![image](https://user-images.githubusercontent.com/108297203/200449229-b4b34bd2-5b2a-4f56-be7e-d0908572257a.png)
     -  Initially it takes the average of the predicted label and calculates Pseudo Residual by: (Observed label - Predicted Label)
     -  These Pseudo Residual are mapped and averaged to the leafs in the first tree where its feature values follow along.
@@ -112,7 +112,8 @@ hyperparameters_gbc = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsam
 - The learning rate is important as if it is too small it will take to long, but if its too large it may miss the minimum and settle for a false minimum.
 
 
-###
+### Logistic Regression
+
 ### Regularization
 - This parameter is present in SGDRegressor and Logistic Regression.
 - It reduces the overfitting/generalsation error (difference between training and validation sets) by discouraging a learning a more complex/flexible model.
@@ -127,11 +128,17 @@ DecisionTree = {"train_r2_score": [0.29042839113251845], "val_rmse_score": [85.2
 RandomForest = {"train_r2_score": [0.3226411832667643], "val_rmse_score": [76.17425012187206], "val_r2_score": [0.546711655881122], "test_rmse_score": [99.77954807083047], "test_r2_score": [0.15020549650156878]}
 GradientBoosting = {"train_r2_score": [0.3342542274100849], "val_rmse_score": [77.46018984566071], "val_r2_score": [0.5312780512550861], "test_rmse_score": [98.69833318677244], "test_r2_score": [0.16852252340935003]}
 SGDRegressor = {"train_r2_score": [0.35568769434379505], "val_rmse_score": [88.33703766444576], "val_r2_score": [0.39040157091919114], "test_rmse_score": [121.28197201436927], "test_r2_score": [-0.25551918203247803]}
-BestModel = RandomForestRegressor(max_depth=4) {'criterion': 'squared_error', 'max_depth': 4, 'min_samples_split': 2, 'n_estimators': 100}
+BestModel = RandomForestRegressor{'criterion': 'squared_error', 'max_depth': 4, 'min_samples_split': 2, 'n_estimators': 100}
 ```
 This run of the models showed the RandomForest model was the best performing with the lowest Validation RMSE. Although when predicting Price per Night for AirBnB listings a RMSE of £76.17 is not acceptable for deployment of the model. All the models had a large disparity between train set and validation/test sets metrics, but comparing the Decision Tree and Random Forest its clear Random Forest models perform with a higher degree of accuracy. Gradient Boosting fell just short of Random Forest so it may warrant some furthur investigating in the future. 
 ### Classification - Category
-
+```python
+DecisionTree = {"train_accuracy": [0.35981432360742704], "val_f1_score": [0.26760569452708005], "val_precision_score": [0.35320621653389056], "val_recall_score": [0.28225806451612906], "val_accuracy": [0.28225806451612906], "test_f1_score": [0.2452931216931217], "test_precision_score": [0.2818558558558559], "test_recall_score": [0.288], "test_accuracy": [0.288]}
+RandomForest = {"train_accuracy": [0.4148393751842027], "val_f1_score": [0.3374691416359968], "val_precision_score": [0.3823039601363756], "val_recall_score": [0.3548387096774194], "val_accuracy": [0.3548387096774194], "test_f1_score": [0.3282900955253896], "test_precision_score": [0.3318865834818776], "test_recall_score": [0.344], "test_accuracy": [0.344]}
+GradientBoosting = {"train_accuracy": [0.4320807544945476], "val_f1_score": [0.39646762968949967], "val_precision_score": [0.4244600119698467], "val_recall_score": [0.3951612903225806], "val_accuracy": [0.3951612903225806], "test_f1_score": [0.36811623931623927], "test_precision_score": [0.36801458190931874], "test_recall_score": [0.376], "test_accuracy": [0.376]}
+LogisticRegression = {"train_accuracy": [0.3907161803713528], "val_f1_score": [0.37573694557453224], "val_precision_score": [0.48118674889310564], "val_recall_score": [0.4032258064516129], "val_accuracy": [0.4032258064516129], "test_f1_score": [0.3437327463209816], "test_precision_score": [0.3452698412698413], "test_recall_score": [0.36], "test_accuracy": [0.36]}
+BestModel = LogisticRegression{"C": 1, "max_iter": 10000, "penalty": "l2", "solver": "newton-cg"}
+```
 ## Neural Networks
 ### How they work
 - These are computing systems which are comprised of many layers of interconnected neurons. 
