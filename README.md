@@ -103,7 +103,7 @@ This model works by building trees sequentially with the features to predict the
         - This limits the prediction after making one tree, but several more are made and added to the calculation.
         - Multiple small steps equates to a better prediction with lower Variance
     - Trees are added based on the errors from previous trees, i.e. the second tree will have Pseudo Residual based on the first tree scaled by learning rate.
-    - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified
+    - This continues until more trees do not significantly reduce the size of residuals or it reaches the maximum trees specified.
 Hyperparameters:
 ```python
 hyperparameters_gbr = {'learning_rate': [0.001, 0.005, 0.01, 0.05, 0.1], 'subsample': [0.9, 0.5, 0.2, 0.1],'n_estimators': [100, 250, 500],'max_depth': [1, 2, 4, 6]}
