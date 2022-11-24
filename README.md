@@ -303,7 +303,7 @@ dataset = AirbnbNightlyPriceImageDataset('bedrooms')
 ```
 By setting these against each other in the file Pipeline.py, the better performing model can be found by comparing the metrics:
 ```python
-'From the individual regression models the optimal models: SGDRegressor(alpha=1, eta0=0.005, learning_rate='adaptive', penalty='l1')'
+From the individual regression models the optimal models: SGDRegressor(alpha=1, eta0=0.005, learning_rate='adaptive', penalty='l1')
 Its metrics were:  {'train_r2_score': [0.8313700789943559], 'val_rmse_score': [0.4928672034366385], 'val_r2_score': [0.8239485104866229], 'test_rmse_score': [0.4894723843741415], 'test_r2_score': [0.8305807505707288]}
 From the linear regression neural network the optimal models metrics was:  {'RMSE_loss_train': 0.700879693031311, 'RMSE_loss_val': 0.7346341013908386, 'RMSE_loss_test': 0.8667487502098083, 'R_squared_train': 0.25440681140927424, 'R_squared_val': 0.31170815943857916, 'R_squared_test': 0.3332315274389551, 'training_duration': 53.28359770774841, 'inference_latency': 0.14548638224601745}
 ```
