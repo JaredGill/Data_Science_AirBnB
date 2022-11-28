@@ -29,6 +29,6 @@ if __name__ == "__main__":
     best_model, best_metrics, best_hyperparameters = find_best_nn(train_loader, val_loader, test_loader)
 
     save_model('test', best_hyperparameters, best_model, best_metrics, "models/regression/neural_networks/")
-    print('From the individual regression models the optimal models: ', regression_model)
+    print('From the individual regression models the optimal model is: ', regression_model)
     print('Its metrics were: ', regression_metrics)
     print('From the linear regression neural network the optimal models metrics was: ', best_metrics)

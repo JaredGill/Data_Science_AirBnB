@@ -116,7 +116,7 @@ def load_airbnb(label: str = "Price_Night", str_cols: list = ["ID", "Category", 
     modified_dfs = (features, labels)
     return modified_dfs
         
-def clean_tabular_data():
+def clean_tabular_data(raw_data_file: str = "C:\\Users\\jared\\AiCore\\DS_Airbnb\\AirbnbDataSci\\structured\\AirBnbData.csv"):
     '''
     Calls several other functions to clean the data.
 
@@ -126,7 +126,7 @@ def clean_tabular_data():
         Cleaned dataframe with rows missing 'Value_rate' removed, rows with NaN set to 1 in ["guests", "beds", "bathrooms", "bedrooms"], 
         and the string descriptions concatenated
     '''
-    raw_df = load_raw_data("C:\\Users\\jared\\AiCore\\DS_Airbnb\\AirbnbDataSci\\structured\\AirBnbData.csv")
+    raw_df = load_raw_data(raw_data_file)
     remove_rows_df = remove_rows_with_missing_ratings(raw_df, 'Value_rate')
     #show(remove_rows_df)
     edit_nan_values_df = set_default_feature_values(remove_rows_df, ["guests", "beds", "bathrooms", "bedrooms"])
